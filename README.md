@@ -212,7 +212,7 @@ The following modules are used in this project:
 - `get_object_tracks()`: Generate tracking data with ByteTrack
 - `interpolate_ball_positions()`: Fill gaps in ball detection
 - `draw_ellipse()`: Visual representation of players
-- `draw_traingle()`: Visual representation of ball
+- `draw_triangle()`: Visual representation of ball
 - `draw_team_ball_control()`: Display team statistics
 - `draw_annotations()`: Complete visualization pipeline
 
