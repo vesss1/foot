@@ -50,6 +50,8 @@ python qt_main.py
 
 The GUI runs the analysis in a background thread, keeping the interface responsive during processing.
 
+📖 **[Read the complete Qt GUI Guide](QT_GUI_GUIDE.md)** for detailed instructions, troubleshooting, and tips.
+
 ## How It Works
 
 This football analysis system processes video footage of football matches to extract meaningful insights about player movement, team performance, and game dynamics. The system follows a multi-stage pipeline:
