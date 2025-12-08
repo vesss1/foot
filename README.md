@@ -3,9 +3,12 @@
 ## Introduction
 The goal of this project is to detect and track players, referees, and footballs in a video using YOLO, one of the best AI object detection models available. We will also train the model to improve its performance. Additionally, we will assign players to teams based on the colors of their t-shirts using Kmeans for pixel segmentation and clustering. With this information, we can measure a team's ball acquisition percentage in a match. We will also use optical flow to measure camera movement between frames, enabling us to accurately measure a player's movement. Furthermore, we will implement perspective transformation to represent the scene's depth and perspective, allowing us to measure a player's movement in meters rather than pixels. Finally, we will calculate a player's speed and the distance covered. This project covers various concepts and addresses real-world problems, making it suitable for both beginners and experienced machine learning engineers.
 
+**NEW: Now includes a Qt-based GUI application for easy video analysis!**
+
 ![Screenshot](output_videos/screenshot.png)
 
 ## Table of Contents
+- [Qt GUI Application](#qt-gui-application)
 - [How It Works](#how-it-works)
 - [System Architecture](#system-architecture)
 - [Functionality Overview](#functionality-overview)
@@ -15,6 +18,37 @@ The goal of this project is to detect and track players, referees, and footballs
 - [Requirements](#requirements)
 - [Installation](#installation)
 - [Usage](#usage)
+
+## Qt GUI Application
+
+The project now includes a comprehensive Qt-based graphical user interface (`qt_main.py`) that makes video analysis easy and interactive.
+
+### GUI Features:
+- **Interactive File Selection**: Browse and select input videos with a file picker
+- **Real-time Progress Tracking**: Visual progress bar and status updates during analysis
+- **Video Player**: Built-in video player to preview input and playback analyzed output
+- **Configurable Settings**: 
+  - Toggle cache usage for faster re-analysis
+  - Select different YOLO models
+  - Choose custom output paths
+- **Analysis Log**: Real-time log display showing analysis steps and progress
+- **Playback Controls**: Play/pause and frame-by-frame navigation of results
+- **Modern UI**: Clean, intuitive interface built with PyQt5
+
+### Launching the GUI:
+```bash
+python qt_main.py
+```
+
+### GUI Workflow:
+1. Click "Browse..." to select an input video
+2. (Optional) Configure settings like cache usage and model selection
+3. Click "Start Analysis" to begin processing
+4. Monitor progress in real-time through the progress bar and log
+5. Once complete, the analyzed video loads automatically in the player
+6. Use playback controls to review the analysis results
+
+The GUI runs the analysis in a background thread, keeping the interface responsive during processing.
 
 ## How It Works
 
@@ -325,6 +359,7 @@ To run this project, you need to have the following requirements installed:
 - Matplotlib - Visualization
 - Pandas - Data manipulation
 - scikit-learn (sklearn) - K-means clustering
+- PyQt5 (GUI framework) - **Required for Qt GUI application**
 
 ## Installation
 
@@ -334,7 +369,10 @@ git clone https://github.com/vesss1/foot.git
 cd foot
 
 # Install required packages
-pip install ultralytics supervision opencv-python numpy matplotlib pandas scikit-learn
+pip install -r requirements.txt
+
+# Or install manually:
+pip install ultralytics supervision opencv-python numpy matplotlib pandas scikit-learn PyQt5
 
 # Download the trained model
 # Place the model file in the models/ directory as models/best.pt
@@ -345,8 +383,35 @@ pip install ultralytics supervision opencv-python numpy matplotlib pandas scikit
 
 ## Usage
 
+### Option 1: Qt GUI Application (Recommended)
+
 ```bash
-# Run the analysis
+# Launch the graphical interface
+python qt_main.py
+```
+
+**GUI Usage:**
+1. Click "Browse..." to select your input video file
+2. (Optional) Adjust settings:
+   - Enable/disable cache for faster re-runs
+   - Select a different YOLO model
+   - Change output file location
+3. Click "Start Analysis" to begin processing
+4. Monitor real-time progress through the progress bar and log
+5. Once complete, use the built-in player to review results
+6. Use playback controls to play/pause and navigate frames
+
+**Benefits of GUI:**
+- No code editing required
+- Visual feedback during processing
+- Built-in video player for results
+- Easy configuration management
+- Beginner-friendly interface
+
+### Option 2: Command Line Script
+
+```bash
+# Run the analysis script
 python main.py
 ```
 
@@ -379,7 +444,9 @@ The generated video includes:
 
 ```
 foot/
-├── main.py                          # Main execution script
+├── main.py                          # Command-line execution script
+├── qt_main.py                       # Qt GUI application (NEW)
+├── requirements.txt                 # Python dependencies (NEW)
 ├── yolo_inference.py                # YOLO inference utilities
 ├── models/                          # Trained model files
 │   └── best.pt                      # YOLO v5 trained weights
