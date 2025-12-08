@@ -48,9 +48,8 @@ INCLUDEPATH += . \
     utils \
     view_transformer
 
-# Data directories (for reference only)
-DISTFILES += \
-    models/* \
-    input_videos/* \
-    output_videos/* \
-    stubs/*
+# Data directories (for reference only):
+# - models/         : YOLO model files (e.g., best.pt)
+# - input_videos/   : Input video files for analysis
+# - output_videos/  : Generated output videos
+# - stubs/          : Cached processing data (track_stubs.pkl, camera_movement_stub.pkl)
