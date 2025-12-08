@@ -330,7 +330,7 @@ To run this project, you need to have the following requirements installed:
 
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone https://github.com/vesss1/foot.git
 cd foot
 
 # Install required packages
@@ -427,10 +427,10 @@ foot/
 - Multiple distance checks for ball possession assignment
 
 ### Limitations:
-- Requires calibration points for perspective transformation
-- Performance depends on video quality and camera angle
-- Jersey color detection may fail with similar team colors
-- Assumes relatively stable camera movement
+- Requires calibration points for perspective transformation.
+- Performance depends on video quality and camera angle.
+- Jersey color detection may fail with similar team colors.
+- Assumes relatively stable camera movement.
 
 ## Future Enhancements
 
