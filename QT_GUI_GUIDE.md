@@ -36,6 +36,24 @@ Place the downloaded model file in the `models/` directory as `best.pt`.
 
 Place your football match video in the `input_videos/` directory, or have it ready in any accessible location.
 
+## Opening Project in Qt Creator (Optional)
+
+If you prefer to use Qt Creator IDE for development:
+
+1. Open Qt Creator
+2. Select "File" → "Open File or Project..."
+3. Navigate to the project directory
+4. Select the `foot.pro` file
+5. Click "Open"
+
+Qt Creator will load the project with all Python files organized and accessible. You can then:
+- Browse and edit Python source files
+- Use Qt Creator's search and navigation features
+- View the project structure in the file tree
+- Still run the application using Python from terminal or Qt Creator's terminal
+
+**Note**: Qt Creator is primarily a C++/Qt IDE, but it can open Python projects as generic projects. For running the Python application, continue to use the commands below.
+
 ## Launching the Application
 
 ```bash
