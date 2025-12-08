@@ -383,6 +383,17 @@ pip install ultralytics supervision opencv-python numpy matplotlib pandas scikit
 # Place input video in input_videos/ directory
 ```
 
+### Opening in Qt Creator (IDE)
+
+If you want to use Qt Creator IDE to view and edit the project:
+
+1. Open Qt Creator
+2. Click "File" → "Open File or Project..."
+3. Navigate to the project directory and select `foot.pro`
+4. Qt Creator will load the project structure with all Python files organized
+
+**Note**: This is a Python project using PyQt5. Qt Creator provides an IDE environment for viewing and editing the code, but you'll still run the Python scripts using the standard Python interpreter as described in the Usage section below.
+
 ## Usage
 
 ### Option 1: Qt GUI Application (Recommended)
