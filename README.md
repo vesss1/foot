@@ -1,5 +1,7 @@
 # Football Analysis Project
 
+**[中文文檔 / Chinese Documentation](README_ZH.md)** | **[使用指南 / Usage Guide (中文)](USAGE_ZH.md)** | **[Qt 圖形介面指南 (中文)](QT_GUI_GUIDE_ZH.md)**
+
 ## Introduction
 The goal of this project is to detect and track players, referees, and footballs in a video using YOLO, one of the best AI object detection models available. We will also train the model to improve its performance. Additionally, we will assign players to teams based on the colors of their t-shirts using Kmeans for pixel segmentation and clustering. With this information, we can measure a team's ball acquisition percentage in a match. We will also use optical flow to measure camera movement between frames, enabling us to accurately measure a player's movement. Furthermore, we will implement perspective transformation to represent the scene's depth and perspective, allowing us to measure a player's movement in meters rather than pixels. Finally, we will calculate a player's speed and the distance covered. This project covers various concepts and addresses real-world problems, making it suitable for both beginners and experienced machine learning engineers.
 
