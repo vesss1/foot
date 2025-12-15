@@ -1,526 +1,452 @@
-# Football Analysis Project
+# 足球分析專案
 
-**[中文文檔 / Chinese Documentation](README_ZH.md)** | **[使用指南 / Usage Guide (中文)](USAGE_ZH.md)** | **[Qt 圖形介面指南 (中文)](QT_GUI_GUIDE_ZH.md)**
+**[English Documentation](README_EN.md)** | **[使用指南](USAGE_ZH.md)** | **[Qt 圖形介面指南](QT_GUI_GUIDE_ZH.md)**
 
-## Introduction
-The goal of this project is to detect and track players, referees, and footballs in a video using YOLO, one of the best AI object detection models available. We will also train the model to improve its performance. Additionally, we will assign players to teams based on the colors of their t-shirts using Kmeans for pixel segmentation and clustering. With this information, we can measure a team's ball acquisition percentage in a match. We will also use optical flow to measure camera movement between frames, enabling us to accurately measure a player's movement. Furthermore, we will implement perspective transformation to represent the scene's depth and perspective, allowing us to measure a player's movement in meters rather than pixels. Finally, we will calculate a player's speed and the distance covered. This project covers various concepts and addresses real-world problems, making it suitable for both beginners and experienced machine learning engineers.
+## 簡介
+本專案旨在使用 YOLO（最佳的 AI 物體偵測模型之一）來偵測和追蹤影片中的球員、裁判和足球。我們還會訓練模型以提高其性能。此外，我們將使用 K-means 進行像素分割和聚類，根據球衣顏色將球員分配到各隊。有了這些資訊，我們可以測量比賽中每支球隊的控球百分比。我們還將使用光流法來測量幀之間的相機移動，從而準確測量球員的移動。此外，我們將實施透視轉換來表示場景的深度和透視，使我們能夠以米為單位而不是像素來測量球員的移動。最後，我們將計算球員的速度和所覆蓋的距離。
 
-**NEW: Now includes a Qt-based GUI application for easy video analysis!**
+**新功能：現在包含基於 Qt 的圖形使用者介面，讓影片分析更加簡單！**
 
-![Screenshot](output_videos/screenshot.png)
+![截圖](output_videos/screenshot.png)
 
-## Table of Contents
-- [Qt GUI Application](#qt-gui-application)
-- [How It Works](#how-it-works)
-- [System Architecture](#system-architecture)
-- [Functionality Overview](#functionality-overview)
-- [Modules Used](#modules-used)
-- [Processing Pipeline](#processing-pipeline)
-- [Component Details](#component-details)
-- [Requirements](#requirements)
-- [Installation](#installation)
-- [Usage](#usage)
+## 目錄
+- [專案功能](#專案功能)
+- [Qt 圖形介面應用程式](#qt-圖形介面應用程式)
+- [系統架構](#系統架構)
+- [運作原理](#運作原理)
+- [使用的模組](#使用的模組)
+- [處理流程](#處理流程)
+- [系統需求](#系統需求)
+- [安裝說明](#安裝說明)
+- [使用方法](#使用方法)
+- [輸出結果](#輸出結果)
 
-## Qt GUI Application
+## 專案功能
 
-The project now includes a comprehensive Qt-based graphical user interface (`qt_main.py`) that makes video analysis easy and interactive.
+這個足球分析系統可以處理足球比賽的影片素材，提取有關球員移動、球隊表現和比賽動態的有意義的見解。
 
-### GUI Features:
-- **Interactive File Selection**: Browse and select input videos with a file picker
-- **Real-time Progress Tracking**: Visual progress bar and status updates during analysis
-- **Video Player**: Built-in video player to preview input and playback analyzed output
-- **Configurable Settings**: 
-  - Toggle cache usage for faster re-analysis
-  - Select different YOLO models
-  - Choose custom output paths
-- **Analysis Log**: Real-time log display showing analysis steps and progress
-- **Playback Controls**: Play/pause and frame-by-frame navigation of results
-- **Modern UI**: Clean, intuitive interface built with PyQt5
+### 核心功能
 
-### Launching the GUI:
+1. **多物體偵測與追蹤**
+   - 同時偵測和追蹤多個球員、裁判和足球
+   - 為每個追蹤的物體維護唯一的 ID
+   - 處理部分遮擋和重新識別
+
+2. **球隊識別**
+   - 根據球衣顏色自動識別兩支球隊
+   - 使用無監督學習（K-means）進行顏色聚類
+   - 使用彩色橢圓視覺化表示球隊分配
+
+3. **控球追蹤**
+   - 即時控球分配
+   - 基於距離的控球計算
+   - 球隊控球統計和百分比
+
+4. **移動分析**
+   - 相機移動偵測和補償
+   - 真實世界距離計算（以米為單位）
+   - 球員速度計算（以公里/小時為單位）
+   - 每個球員的累積距離追蹤
+
+5. **視覺化分析**
+   - 使用彩色橢圓進行球員追蹤
+   - 球隊識別顏色
+   - 控球指示器（三角形）
+   - 螢幕統計資料顯示
+   - 相機移動指示器
+
+## Qt 圖形介面應用程式
+
+本專案現在包含一個全面的基於 Qt 的圖形使用者介面（`qt_main.py`），使影片分析變得簡單和互動。
+
+### 圖形介面功能：
+- **互動式檔案選擇**：使用檔案選擇器瀏覽和選擇輸入影片
+- **即時進度追蹤**：分析期間的視覺進度條和狀態更新
+- **影片播放器**：內建影片播放器可預覽輸入和播放分析輸出
+- **可配置設定**：
+  - 切換快取使用以加快重新分析速度
+  - 選擇不同的 YOLO 模型
+  - 選擇自訂輸出路徑
+- **分析日誌**：顯示分析步驟和進度的即時日誌
+- **播放控制**：播放/暫停和逐幀導航結果
+- **現代化介面**：使用 PyQt5 建構的清晰、直觀的介面
+
+### 啟動圖形介面：
 ```bash
 python qt_main.py
 ```
 
-### GUI Workflow:
-1. Click "Browse..." to select an input video
-2. (Optional) Configure settings like cache usage and model selection
-3. Click "Start Analysis" to begin processing
-4. Monitor progress in real-time through the progress bar and log
-5. Once complete, the analyzed video loads automatically in the player
-6. Use playback controls to review the analysis results
+### 圖形介面工作流程：
+1. 點擊「瀏覽...」選擇輸入影片
+2. （選擇性）配置設定，如快取使用和模型選擇
+3. 點擊「開始分析」開始處理
+4. 透過進度條和日誌即時監控進度
+5. 完成後，分析的影片會自動載入到播放器中
+6. 使用播放控制查看分析結果
 
-The GUI runs the analysis in a background thread, keeping the interface responsive during processing.
+圖形介面在後台執行緒中執行分析，在處理期間保持介面的回應性。
 
-📖 **[Read the complete Qt GUI Guide](QT_GUI_GUIDE.md)** for detailed instructions, troubleshooting, and tips.
+📖 **[閱讀完整的 Qt GUI 指南（中文）](QT_GUI_GUIDE_ZH.md)** 以獲取詳細說明、疑難排解和提示。
 
-## How It Works
-
-This football analysis system processes video footage of football matches to extract meaningful insights about player movement, team performance, and game dynamics. The system follows a multi-stage pipeline:
-
-### 1. Video Input & Object Detection
-- The system reads video frames from the input video file
-- Uses a trained YOLO v5 model to detect players, referees, and the ball in each frame
-- Processes frames in batches for efficiency
-
-### 2. Object Tracking
-- Implements ByteTrack algorithm to maintain consistent tracking IDs across frames
-- Tracks players and referees throughout the video
-- Handles occlusions and temporary disappearances
-- Interpolates ball positions to handle detection gaps
-
-### 3. Team Assignment
-- Analyzes the top half of each player's bounding box (jersey area)
-- Uses K-means clustering on pixel colors to identify team jerseys
-- Assigns players to Team 1 or Team 2 based on jersey color
-- Maintains consistent team assignments throughout the match
-
-### 4. Camera Movement Compensation
-- Uses optical flow (Lucas-Kanade method) to detect camera movement
-- Tracks feature points between consecutive frames
-- Adjusts player positions to account for camera panning and movement
-- Ensures accurate measurement of actual player movement
-
-### 5. Perspective Transformation
-- Converts 2D pixel coordinates to real-world measurements
-- Maps court positions to meters using perspective transformation
-- Enables accurate distance and speed calculations
-- Accounts for camera angle and field perspective
-
-### 6. Ball Possession Analysis
-- Calculates distance between each player and the ball
-- Assigns ball possession to the nearest player within threshold
-- Tracks ball possession over time
-- Calculates ball control percentage for each team
-
-### 7. Speed & Distance Calculation
-- Measures distance traveled by each player in meters
-- Calculates player speed in km/h
-- Updates measurements in real-time throughout the video
-- Displays speed and distance for each tracked player
-
-### 8. Visualization & Output
-- Draws ellipses around players with team colors
-- Shows player IDs and tracking information
-- Displays ball possession indicators
-- Shows camera movement, speed, distance, and team statistics
-- Generates annotated output video
-
-## System Architecture
+## 系統架構
 
 ```
-Input Video
+輸入影片
     |
     v
-[Video Reader] --> Frames
+[影片讀取器] --> 影格
     |
     v
-[YOLO Detection] --> Raw Detections
+[YOLO 偵測] --> 原始偵測
     |
     v
-[ByteTrack] --> Tracked Objects (Players, Referees, Ball)
+[ByteTrack] --> 追蹤的物體（球員、裁判、足球）
     |
-    +---> [Team Assigner] --> Team Classifications
+    +---> [球隊分配器] --> 球隊分類
     |
-    +---> [Camera Movement Estimator] --> Camera Adjustments
+    +---> [相機移動估計器] --> 相機調整
     |
-    +---> [View Transformer] --> Real-world Coordinates
+    +---> [視角轉換器] --> 真實世界座標
     |
-    +---> [Ball Assigner] --> Ball Possession Data
+    +---> [控球分配器] --> 控球資料
     |
-    +---> [Speed & Distance Estimator] --> Performance Metrics
-    |
-    v
-[Visualization Engine] --> Annotated Frames
+    +---> [速度與距離估計器] --> 性能指標
     |
     v
-[Video Writer] --> Output Video
+[視覺化引擎] --> 標註的影格
+    |
+    v
+[影片寫入器] --> 輸出影片
 ```
 
-## Functionality Overview
+## 運作原理
 
-### Core Features
+### 1. 影片輸入與物體偵測
+- 系統從輸入影片檔案讀取影片影格
+- 使用訓練過的 YOLO v5 模型在每個影格中偵測球員、裁判和足球
+- 批次處理影格以提高效率
 
-1. **Multi-Object Detection & Tracking**
-   - Detects and tracks multiple players, referees, and ball simultaneously
-   - Maintains unique IDs for each tracked object
-   - Handles partial occlusions and re-identification
+### 2. 物體追蹤
+- 實現 ByteTrack 演算法以維護影格間一致的追蹤 ID
+- 在整個影片中追蹤球員和裁判
+- 處理遮擋和暫時消失
+- 插值足球位置以處理偵測間隙
 
-2. **Team Identification**
-   - Automatically identifies two teams based on jersey colors
-   - Uses unsupervised learning (K-means) for color clustering
-   - Visual indication of team assignment with colored ellipses
+### 3. 球隊分配
+- 分析每個球員邊界框的上半部分（球衣區域）
+- 使用 K-means 聚類對像素顏色進行聚類以識別球隊球衣
+- 根據球衣顏色將球員分配到球隊 1 或球隊 2
+- 在整個比賽中保持一致的球隊分配
 
-3. **Ball Possession Tracking**
-   - Real-time ball possession assignment
-   - Distance-based possession calculation
-   - Team ball control statistics and percentages
+### 4. 相機移動補償
+- 使用光流（Lucas-Kanade 方法）偵測相機移動
+- 追蹤連續影格之間的特徵點
+- 調整球員位置以補償相機平移和移動
+- 確保準確測量實際球員移動
 
-4. **Movement Analysis**
-   - Camera movement detection and compensation
-   - Real-world distance calculation (in meters)
-   - Player speed calculation (in km/h)
-   - Cumulative distance tracking for each player
+### 5. 透視轉換
+- 將 2D 像素座標轉換為真實世界測量
+- 使用透視轉換將球場位置映射到米
+- 啟用準確的距離和速度計算
+- 考慮相機角度和場地透視
 
-5. **Visual Analytics**
-   - Player tracking with colored ellipses
-   - Team identification colors
-   - Ball possession indicators (triangles)
-   - On-screen statistics display
-   - Camera movement indicators
+### 6. 控球分析
+- 計算每個球員與足球之間的距離
+- 將控球分配給閾值內的最近球員
+- 隨時間追蹤控球
+- 計算每支球隊的控球百分比
 
-## Modules Used
-The following modules are used in this project:
-- **YOLO v5**: State-of-the-art object detection model for identifying players, referees, and ball
-- **ByteTrack**: Multi-object tracking algorithm for maintaining consistent IDs
-- **K-means Clustering**: Unsupervised learning for team color identification
-- **Optical Flow (Lucas-Kanade)**: Camera movement detection between frames
-- **Perspective Transformation**: Converting pixel coordinates to real-world measurements
-- **OpenCV**: Computer vision operations and video processing
+### 7. 速度與距離計算
+- 測量每個球員以米為單位行進的距離
+- 計算球員速度（公里/小時）
+- 在整個影片中即時更新測量
+- 顯示每個追蹤球員的速度和距離
 
-## Processing Pipeline
+### 8. 視覺化與輸出
+- 用球隊顏色在球員周圍繪製橢圓
+- 顯示球員 ID 和追蹤資訊
+- 顯示控球指示器
+- 顯示相機移動、速度、距離和球隊統計資料
+- 生成標註的輸出影片
 
-### Step-by-Step Process:
+## 使用的模組
+本專案中使用了以下模組：
+- **YOLO v5**：用於識別球員、裁判和足球的最先進物體偵測模型
+- **ByteTrack**：用於維護一致 ID 的多物體追蹤演算法
+- **K-means 聚類**：用於球隊顏色識別的無監督學習
+- **光流（Lucas-Kanade）**：影格之間的相機移動偵測
+- **透視轉換**：將像素座標轉換為真實世界測量
+- **OpenCV**：電腦視覺操作和影片處理
 
-1. **Video Loading** (`utils/video_utils.py`)
-   - Read video file frame by frame
-   - Store frames in memory for processing
+## 處理流程
 
-2. **Object Detection** (`trackers/tracker.py`)
-   - Initialize YOLO model with trained weights
-   - Detect objects in batches (batch_size=20)
-   - Convert detections to supervision format
+### 逐步過程：
 
-3. **Object Tracking** (`trackers/tracker.py`)
-   - Apply ByteTrack algorithm
-   - Assign and maintain tracking IDs
-   - Interpolate missing ball positions
+1. **影片載入** (`utils/video_utils.py`)
+   - 逐幀讀取影片檔案
+   - 將影格儲存在記憶體中進行處理
 
-4. **Position Calculation** (`utils/bbox_utils.py`)
-   - Calculate center points for ball
-   - Calculate foot positions for players
-   - Store position data in tracks
+2. **物體偵測** (`trackers/tracker.py`)
+   - 使用訓練權重初始化 YOLO 模型
+   - 批次偵測物體（batch_size=20）
+   - 將偵測轉換為 supervision 格式
 
-5. **Camera Movement Analysis** (`camera_movement_estimator/`)
-   - Extract feature points from first frame
-   - Track features using Lucas-Kanade optical flow
-   - Calculate camera movement vectors
-   - Adjust all object positions
+3. **物體追蹤** (`trackers/tracker.py`)
+   - 應用 ByteTrack 演算法
+   - 分配和維護追蹤 ID
+   - 插值缺失的足球位置
 
-6. **Perspective Transformation** (`view_transformer/`)
-   - Define court pixel vertices and real-world dimensions
-   - Apply perspective transformation matrix
-   - Convert adjusted positions to meters
+4. **位置計算** (`utils/bbox_utils.py`)
+   - 計算足球的中心點
+   - 計算球員的腳部位置
+   - 在追蹤中儲存位置資料
 
-7. **Team Assignment** (`team_assigner/`)
-   - Extract jersey colors from first frame
-   - Cluster colors into two teams using K-means
-   - Assign team IDs to all players
-   - Maintain team assignments throughout video
+5. **相機移動分析** (`camera_movement_estimator/`)
+   - 從第一幀提取特徵點
+   - 使用 Lucas-Kanade 光流追蹤特徵
+   - 計算相機移動向量
+   - 調整所有物體位置
 
-8. **Ball Possession** (`player_ball_assigner/`)
-   - Calculate distance from each player to ball
-   - Assign ball to nearest player within threshold (70 pixels)
-   - Track possession changes over time
+6. **透視轉換** (`view_transformer/`)
+   - 定義球場像素頂點和真實世界尺寸
+   - 應用透視轉換矩陣
+   - 將調整後的位置轉換為米
 
-9. **Speed & Distance Calculation** (`speed_and_distance_estimator/`)
-   - Measure distance between frame windows (5 frames)
-   - Calculate speed based on distance and time
-   - Accumulate total distance traveled
-   - Convert to km/h and meters
+7. **球隊分配** (`team_assigner/`)
+   - 從第一幀提取球衣顏色
+   - 使用 K-means 將顏色聚類為兩支球隊
+   - 為所有球員分配球隊 ID
+   - 在整個影片中維護球隊分配
 
-10. **Visualization** (`trackers/tracker.py`)
-    - Draw ellipses around players (color-coded by team)
-    - Draw triangles for ball and possession indicator
-    - Display team statistics and ball control
-    - Show camera movement data
-    - Show speed and distance for each player
+8. **控球** (`player_ball_assigner/`)
+   - 計算從每個球員到足球的距離
+   - 將球分配給閾值內的最近球員（70 像素）
+   - 隨時間追蹤控球變化
 
-11. **Output Generation** (`utils/video_utils.py`)
-    - Write annotated frames to output video
-    - Save as AVI format with XVID codec
+9. **速度與距離計算** (`speed_and_distance_estimator/`)
+   - 測量影格窗口之間的距離（5 幀）
+   - 根據距離和時間計算速度
+   - 累積總行進距離
+   - 轉換為公里/小時和米
 
-## Component Details
+10. **視覺化** (`trackers/tracker.py`)
+    - 在球員周圍繪製橢圓（按球隊顏色編碼）
+    - 為足球和控球指示器繪製三角形
+    - 顯示球隊統計資料和控球
+    - 顯示相機移動資料
+    - 顯示每個球員的速度和距離
 
-### 1. Tracker (`trackers/tracker.py`)
-**Purpose**: Detect and track objects throughout the video
+11. **輸出生成** (`utils/video_utils.py`)
+    - 將標註的影格寫入輸出影片
+    - 儲存為帶有 XVID 編解碼器的 AVI 格式
 
-**Key Methods**:
-- `detect_frames()`: Batch detection using YOLO
-- `get_object_tracks()`: Generate tracking data with ByteTrack
-- `interpolate_ball_positions()`: Fill gaps in ball detection
-- `draw_ellipse()`: Visual representation of players
-- `draw_triangle()`: Visual representation of ball
-- `draw_team_ball_control()`: Display team statistics
-- `draw_annotations()`: Complete visualization pipeline
+## 訓練的模型
+- [訓練的 Yolo v5](https://drive.google.com/file/d/1DC2kCygbBWUKheQ_9cFziCsYVSRw6axK/view?usp=sharing)
 
-**Features**:
-- Goalkeeper detection and conversion to player class
-- Stub file caching for faster re-runs
-- Batch processing for efficiency
+## 範例影片
+- [範例輸入影片](https://drive.google.com/file/d/1t6agoqggZKx6thamUuPAIdN_1zR9v9S_/view?usp=sharing)
 
-### 2. Team Assigner (`team_assigner/team_assigner.py`)
-**Purpose**: Identify and assign players to teams based on jersey colors
-
-**Key Methods**:
-- `get_player_color()`: Extract dominant jersey color
-- `get_clustering_model()`: Create K-means model
-- `assign_team_color()`: Initial team color assignment
-- `get_player_team()`: Assign individual player to team
-
-**Algorithm**:
-1. Crop top half of player bounding box (jersey area)
-2. Apply K-means clustering to identify jersey vs background
-3. Extract player cluster color
-4. Cluster all player colors into 2 teams
-5. Assign team IDs consistently
-
-### 3. Player Ball Assigner (`player_ball_assigner/player_ball_assigner.py`)
-**Purpose**: Determine which player has possession of the ball
-
-**Key Methods**:
-- `assign_ball_to_player()`: Calculate nearest player to ball
-
-**Algorithm**:
-1. Get ball center position
-2. Calculate distance from ball to each player's feet
-3. Check both left and right foot distances
-4. Assign to nearest player if within 70 pixels
-5. Return player ID or -1 if no possession
-
-### 4. Camera Movement Estimator (`camera_movement_estimator/camera_movement_estimator.py`)
-**Purpose**: Detect and compensate for camera movement
-
-**Key Methods**:
-- `get_camera_movement()`: Calculate movement vectors per frame
-- `add_adjust_positions_to_tracks()`: Apply corrections to positions
-- `draw_camera_movement()`: Visualize camera movement
-
-**Algorithm**:
-1. Extract good features to track from first frame
-2. Use Lucas-Kanade optical flow to track features
-3. Calculate maximum feature displacement
-4. Store X,Y movement vectors
-5. Adjust all object positions by camera movement
-
-### 5. View Transformer (`view_transformer/view_transformer.py`)
-**Purpose**: Convert pixel coordinates to real-world measurements
-
-**Key Methods**:
-- `transform_point()`: Convert single point using perspective matrix
-- `add_transformed_position_to_tracks()`: Transform all positions
-
-**Configuration**:
-- Court width: 68 meters
-- Court length: 23.32 meters
-- Four reference points map pixels to real-world coordinates
-
-### 6. Speed and Distance Estimator (`speed_and_distance_estimator/speed_and_distance_estimator.py`)
-**Purpose**: Calculate player speed and distance traveled
-
-**Key Methods**:
-- `add_speed_and_distance_to_tracks()`: Calculate metrics
-- `draw_speed_and_distance()`: Display on video
-
-**Configuration**:
-- Frame window: 5 frames
-- Frame rate: 24 fps
-- Speed in km/h
-- Distance in meters
-
-**Algorithm**:
-1. Measure distance between positions at frame window interval
-2. Calculate time elapsed based on frame rate
-3. Calculate speed (distance/time)
-4. Accumulate total distance
-5. Update all frames in window with current metrics
-
-### 7. Utility Functions (`utils/`)
-**bbox_utils.py**:
-- `get_center_of_bbox()`: Calculate bounding box center
-- `get_bbox_width()`: Calculate bounding box width
-- `measure_distance()`: Euclidean distance between points
-- `measure_xy_distance()`: X,Y distance components
-- `get_foot_position()`: Calculate bottom-center of bbox
-
-**video_utils.py**:
-- `read_video()`: Load video into frame list
-- `save_video()`: Write frames to video file
-
-## Trained Models
-- [Trained Yolo v5](https://drive.google.com/file/d/1DC2kCygbBWUKheQ_9cFziCsYVSRw6axK/view?usp=sharing)
-
-## Sample video
--  [Sample input video](https://drive.google.com/file/d/1t6agoqggZKx6thamUuPAIdN_1zR9v9S_/view?usp=sharing)
-
-## Requirements
-To run this project, you need to have the following requirements installed:
+## 系統需求
+要執行此專案，您需要安裝以下需求：
 - Python 3.x
-- ultralytics (YOLO implementation)
-- supervision (tracking utilities)
-- OpenCV (cv2) - Computer vision operations
-- NumPy - Numerical computations
-- Matplotlib - Visualization
-- Pandas - Data manipulation
-- scikit-learn (sklearn) - K-means clustering
-- PyQt5 (GUI framework) - **Required for Qt GUI application**
+- ultralytics（YOLO 實現）
+- supervision（追蹤工具）
+- OpenCV (cv2) - 電腦視覺操作
+- NumPy - 數值計算
+- Matplotlib - 視覺化
+- Pandas - 資料處理
+- scikit-learn (sklearn) - K-means 聚類
+- PyQt5（GUI 框架）- **Qt GUI 應用程式所需**
 
-## Installation
+## 安裝說明
 
 ```bash
-# Clone the repository
+# 複製儲存庫
 git clone https://github.com/vesss1/foot.git
 cd foot
 
-# Install required packages
+# 安裝所需套件
 pip install -r requirements.txt
 
-# Or install manually:
+# 或手動安裝：
 pip install ultralytics supervision opencv-python numpy matplotlib pandas scikit-learn PyQt5
 
-# Download the trained model
-# Place the model file in the models/ directory as models/best.pt
+# 下載訓練的模型
+# 將模型檔案放在 models/ 目錄中，命名為 models/best.pt
 
-# Download sample video (optional)
-# Place input video in input_videos/ directory
+# 下載範例影片（選擇性）
+# 將輸入影片放在 input_videos/ 目錄中
 ```
 
-### Opening in Qt Creator (IDE)
+### 在 Qt Creator（IDE）中開啟
 
-If you want to use Qt Creator IDE to view and edit the project:
+如果您想使用 Qt Creator IDE 查看和編輯專案：
 
-1. Open Qt Creator
-2. Click "File" → "Open File or Project..."
-3. Navigate to the project directory and select `foot.pro`
-4. Qt Creator will load the project structure with all Python files organized
+1. 開啟 Qt Creator
+2. 點擊「檔案」→「開啟檔案或專案...」
+3. 導航到專案目錄並選擇 `foot.pro`
+4. Qt Creator 將載入專案結構，所有 Python 檔案都已組織好
 
-**Note**: This is a Python project using PyQt5. Qt Creator provides an IDE environment for viewing and editing the code, but you'll still run the Python scripts using the standard Python interpreter as described in the Usage section below.
+**注意**：這是一個使用 PyQt5 的 Python 專案。Qt Creator 提供了一個 IDE 環境來查看和編輯程式碼，但您仍然會使用標準 Python 解譯器來執行 Python 腳本。
 
-## Usage
+## 使用方法
 
-### Option 1: Qt GUI Application (Recommended)
+### 選項 1：Qt 圖形介面應用程式（推薦）
 
 ```bash
-# Launch the graphical interface
+# 啟動圖形介面
 python qt_main.py
 ```
 
-**GUI Usage:**
-1. Click "Browse..." to select your input video file
-2. (Optional) Adjust settings:
-   - Enable/disable cache for faster re-runs
-   - Select a different YOLO model
-   - Change output file location
-3. Click "Start Analysis" to begin processing
-4. Monitor real-time progress through the progress bar and log
-5. Once complete, use the built-in player to review results
-6. Use playback controls to play/pause and navigate frames
+**圖形介面使用方法：**
+1. 點擊「瀏覽...」選擇您的輸入影片檔案
+2. （選擇性）調整設定：
+   - 啟用/停用快取以加快重新執行速度
+   - 選擇不同的 YOLO 模型
+   - 變更輸出檔案位置
+3. 點擊「開始分析」開始處理
+4. 透過進度條和日誌監控即時進度
+5. 完成後，使用內建播放器查看結果
+6. 使用播放控制進行播放/暫停和導航影格
 
-**Benefits of GUI:**
-- No code editing required
-- Visual feedback during processing
-- Built-in video player for results
-- Easy configuration management
-- Beginner-friendly interface
+**圖形介面的好處：**
+- 無需編輯程式碼
+- 處理期間的視覺回饋
+- 內建結果影片播放器
+- 簡單的配置管理
+- 適合初學者的介面
 
-### Option 2: Command Line Script
+### 選項 2：命令列腳本
 
 ```bash
-# Run the analysis script
+# 執行分析腳本
 python main.py
 ```
 
-The script will:
-1. Read the input video from `input_videos/08fd33_4.mp4`
-2. Process all frames through the pipeline
-3. Generate annotated output video at `output_videos/output_video.avi`
+腳本將：
+1. 從 `input_videos/08fd33_4.mp4` 讀取輸入影片
+2. 透過管道處理所有影格
+3. 在 `output_videos/output_video.avi` 生成標註的輸出影片
 
-**Note**: First run may take longer. Subsequent runs use cached stub files for faster processing.
+**注意**：首次執行可能需要更長時間。後續執行使用快取的 stub 檔案以加快處理速度。
 
-### Configuration Options in main.py:
-- `read_from_stub=True`: Use cached tracking/camera data
-- `stub_path`: Path to cache files
-- Video input path
-- Output video path
+### main.py 中的配置選項：
+- `read_from_stub=True`：使用快取的追蹤/相機資料
+- `stub_path`：快取檔案的路徑
+- 影片輸入路徑
+- 輸出影片路徑
 
-## Output
+## 輸出結果
 
-The generated video includes:
-- Color-coded player tracking (ellipses with team colors)
-- Player IDs on jerseys
-- Ball tracking (green triangle)
-- Ball possession indicator (red triangle above player)
-- Team ball control percentages
-- Camera movement X/Y coordinates
-- Individual player speed (km/h)
-- Individual player distance traveled (meters)
+生成的影片包括：
+- 彩色編碼的球員追蹤（帶有球隊顏色的橢圓）
+- 球衣上的球員 ID
+- 足球追蹤（綠色三角形）
+- 控球指示器（球員上方的紅色三角形）
+- 球隊控球百分比
+- 相機移動 X/Y 座標
+- 個別球員速度（公里/小時）
+- 個別球員行進距離（米）
 
-## Project Structure
+## 專案結構
 
 ```
 foot/
-├── main.py                          # Command-line execution script
-├── qt_main.py                       # Qt GUI application (NEW)
-├── requirements.txt                 # Python dependencies (NEW)
-├── yolo_inference.py                # YOLO inference utilities
-├── models/                          # Trained model files
-│   └── best.pt                      # YOLO v5 trained weights
-├── input_videos/                    # Input video files
-├── output_videos/                   # Generated output videos
-├── stubs/                           # Cached processing data
-│   ├── track_stubs.pkl             # Cached tracking data
-│   └── camera_movement_stub.pkl    # Cached camera movement
-├── trackers/                        # Object detection and tracking
+├── main.py                          # 命令列執行腳本
+├── qt_main.py                       # Qt GUI 應用程式（新）
+├── requirements.txt                 # Python 依賴項（新）
+├── yolo_inference.py                # YOLO 推理工具
+├── models/                          # 訓練的模型檔案
+│   └── best.pt                      # YOLO v5 訓練權重
+├── input_videos/                    # 輸入影片檔案
+├── output_videos/                   # 生成的輸出影片
+├── stubs/                           # 快取的處理資料
+│   ├── track_stubs.pkl             # 快取的追蹤資料
+│   └── camera_movement_stub.pkl    # 快取的相機移動
+├── trackers/                        # 物體偵測和追蹤
 │   ├── __init__.py
 │   └── tracker.py
-├── team_assigner/                   # Team identification
+├── team_assigner/                   # 球隊識別
 │   ├── __init__.py
 │   └── team_assigner.py
-├── player_ball_assigner/            # Ball possession logic
+├── player_ball_assigner/            # 控球邏輯
 │   ├── __init__.py
 │   └── player_ball_assigner.py
-├── camera_movement_estimator/       # Camera movement detection
+├── camera_movement_estimator/       # 相機移動偵測
 │   ├── __init__.py
 │   └── camera_movement_estimator.py
-├── view_transformer/                # Perspective transformation
+├── view_transformer/                # 透視轉換
 │   ├── __init__.py
 │   └── view_transformer.py
-├── speed_and_distance_estimator/    # Performance metrics
+├── speed_and_distance_estimator/    # 性能指標
 │   ├── __init__.py
 │   └── speed_and_distance_estimator.py
-└── utils/                           # Helper functions
+└── utils/                           # 輔助函數
     ├── __init__.py
-    ├── bbox_utils.py               # Bounding box utilities
-    └── video_utils.py              # Video I/O utilities
+    ├── bbox_utils.py               # 邊界框工具
+    └── video_utils.py              # 影片 I/O 工具
 ```
 
-## Technical Details
+## 技術細節
 
-### Performance Optimizations:
-- Batch processing of frames for YOLO detection
-- Stub file caching for tracking and camera movement data
-- Efficient numpy operations for transformations
-- Frame window approach for speed/distance calculations
+### 性能優化：
+- 批次處理影格以進行 YOLO 偵測
+- Stub 檔案快取追蹤和相機移動資料
+- 高效的 numpy 操作進行轉換
+- 速度/距離計算的影格窗口方法
 
-### Accuracy Considerations:
-- Ball position interpolation handles detection gaps
-- Camera movement compensation ensures accurate measurements
-- Perspective transformation provides real-world coordinates
-- Multiple distance checks for ball possession assignment
+### 準確性考慮：
+- 足球位置插值處理偵測間隙
+- 相機移動補償確保準確測量
+- 透視轉換提供真實世界座標
+- 控球分配的多重距離檢查
 
-### Limitations:
-- Requires calibration points for perspective transformation.
-- Performance depends on video quality and camera angle.
-- Jersey color detection may fail with similar team colors.
-- Assumes relatively stable camera movement.
+### 限制：
+- 需要透視轉換的校準點
+- 性能取決於影片品質和相機角度
+- 球衣顏色偵測可能在類似球隊顏色時失敗
+- 假設相對穩定的相機移動
 
-## Future Enhancements
+## 未來增強功能
 
-Potential improvements:
-- Real-time processing capabilities
-- Support for multiple camera angles
-- Advanced player statistics (heat maps, pass detection)
-- Automatic camera calibration
-- Deep learning-based team assignment
-- Player identification and jersey number recognition
-- Tactical analysis and formation detection
+潛在改進：
+- 即時處理能力
+- 支援多相機角度
+- 進階球員統計（熱圖、傳球偵測）
+- 自動相機校準
+- 基於深度學習的球隊分配
+- 球員識別和球衣號碼識別
+- 戰術分析和陣型偵測
+
+## 常見問題
+
+**問：這個專案是做什麼用的？**
+答：這是一個足球影片分析系統，可以自動偵測和追蹤球員、足球和裁判，計算球員速度和距離，識別球隊，並分析控球情況。
+
+**問：我需要什麼硬體？**
+答：需要一台裝有 Python 3.x 的電腦。建議使用支援 GPU 的系統以加快處理速度，但也可以使用 CPU。
+
+**問：我可以分析自己的足球影片嗎？**
+答：可以！只需將您的影片放在 input_videos/ 目錄中，並使用圖形介面或修改 main.py 中的路徑。
+
+**問：處理需要多長時間？**
+答：這取決於影片長度和您的硬體。首次執行較慢，但後續執行使用快取會更快。
+
+**問：我需要訓練模型嗎？**
+答：不需要。專案提供了預訓練的 YOLO v5 模型。只需從提供的連結下載即可。
+
+## 支援
+
+如有問題或疑問：
+1. 查看此指南以獲取疑難排解資訊
+2. 查閱主要 README.md 以獲取技術細節
+3. 確保正確安裝所有依賴項
+4. 驗證影片檔案是否為支援的格式
+
+## 授權
+
+請參閱 LICENSE 檔案以獲取授權詳細資訊。
+
+---
+
+**享受足球影片分析！** ⚽
