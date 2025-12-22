@@ -1,2 +1,6 @@
 *__pycahce__*
 *.pyc
+
+# Qt Creator user-specific files
+*.pro.user
+*.pro.user.*

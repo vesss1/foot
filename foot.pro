@@ -32,7 +32,14 @@ SOURCES += \
 # Documentation and other files
 OTHER_FILES += \
     README.md \
+    README_EN.md \
+    README_ZH.md \
+    USAGE_ZH.md \
     QT_GUI_GUIDE.md \
+    QT_GUI_GUIDE_ZH.md \
+    QT_CREATOR_SETUP.md \
+    QT_CREATOR_SETUP_ZH.md \
+    中文文檔.md \
     requirements.txt \
     .gitignore \
     run_qt_gui.sh \
