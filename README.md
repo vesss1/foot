@@ -289,6 +289,8 @@ pip install ultralytics supervision opencv-python numpy matplotlib pandas scikit
 
 **注意**：這是一個使用 PyQt5 的 Python 專案。Qt Creator 提供了一個 IDE 環境來查看和編輯程式碼，但您仍然會使用標準 Python 解譯器來執行 Python 腳本。
 
+📖 **[閱讀完整的 Qt Creator 整合指南](QT_CREATOR_SETUP_ZH.md)** 以獲取詳細的安裝和配置說明。
+
 ## 使用方法
 
 ### 選項 1：Qt 圖形介面應用程式（推薦）

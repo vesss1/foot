@@ -396,6 +396,8 @@ If you want to use Qt Creator IDE to view and edit the project:
 
 **Note**: This is a Python project using PyQt5. Qt Creator provides an IDE environment for viewing and editing the code, but you'll still run the Python scripts using the standard Python interpreter as described in the Usage section below.
 
+📖 **[Read the complete Qt Creator Integration Guide](QT_CREATOR_SETUP.md)** for detailed installation and configuration instructions.
+
 ## Usage
 
 ### Option 1: Qt GUI Application (Recommended)
