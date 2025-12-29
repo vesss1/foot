@@ -6,6 +6,7 @@ Test script for data export functionality
 import os
 import json
 import csv
+import tempfile
 import numpy as np
 from utils.data_export import export_analysis_data
 
@@ -85,8 +86,8 @@ def test_export_functionality():
     team_ball_control = create_sample_team_ball_control()
     camera_movement = create_sample_camera_movement()
     
-    # Export data
-    output_dir = '/tmp/test_export'
+    # Export data - use cross-platform temp directory
+    output_dir = os.path.join(tempfile.gettempdir(), 'test_export')
     os.makedirs(output_dir, exist_ok=True)
     
     print(f"\nExporting to {output_dir}...")

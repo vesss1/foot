@@ -9,6 +9,7 @@ from view_transformer import ViewTransformer
 from speed_and_distance_estimator import SpeedAndDistance_Estimator
 import argparse
 import os
+import sys
 
 
 def main():
@@ -158,4 +159,4 @@ def main():
     return 0
 
 if __name__ == '__main__':
-    exit(main())
+    sys.exit(main())
