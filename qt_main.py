@@ -22,7 +22,7 @@ import cv2
 import numpy as np
 
 # Import existing analysis modules
-from utils import read_video, save_video
+from utils import read_video, save_video, export_analysis_data
 from trackers import Tracker
 from team_assigner import TeamAssigner
 from player_ball_assigner import PlayerBallAssigner
@@ -163,6 +163,24 @@ class VideoAnalysisThread(QThread):
             # Save video
             self.progress_update.emit(90, "Saving output video...")
             save_video(output_video_frames, self.output_path)
+            
+            # Export analysis data if enabled
+            if self.config.get('export_data', True):
+                self.progress_update.emit(95, "Exporting analysis data...")
+                output_dir = os.path.dirname(self.output_path) or 'output_videos'
+                filename_prefix = os.path.splitext(os.path.basename(self.output_path))[0]
+                
+                try:
+                    exported_files = export_analysis_data(
+                        tracks=tracks,
+                        team_ball_control=team_ball_control,
+                        camera_movement_per_frame=camera_movement_per_frame,
+                        output_dir=output_dir,
+                        filename_prefix=filename_prefix
+                    )
+                    self.progress_update.emit(98, f"Exported {len(exported_files)} data files")
+                except Exception as export_error:
+                    self.progress_update.emit(98, f"Warning: Data export failed: {str(export_error)}")
             
             self.progress_update.emit(100, "Analysis complete!")
             self.analysis_complete.emit(self.output_path)
@@ -344,6 +362,10 @@ class FootballAnalysisGUI(QMainWindow):
         self.use_cache_checkbox.setChecked(True)
         settings_layout.addWidget(self.use_cache_checkbox)
         
+        self.export_data_checkbox = QCheckBox("Export analysis data (JSON/CSV)")
+        self.export_data_checkbox.setChecked(True)
+        settings_layout.addWidget(self.export_data_checkbox)
+        
         model_layout = QHBoxLayout()
         model_layout.addWidget(QLabel("Model:"))
         self.model_combo = QComboBox()
@@ -467,7 +489,8 @@ class FootballAnalysisGUI(QMainWindow):
         
         # Configure analysis
         config = {
-            'use_cache': self.use_cache_checkbox.isChecked()
+            'use_cache': self.use_cache_checkbox.isChecked(),
+            'export_data': self.export_data_checkbox.isChecked()
         }
         
         # Disable controls

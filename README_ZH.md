@@ -325,6 +325,7 @@ python main.py
 1. 從 `input_videos/08fd33_4.mp4` 讀取輸入影片
 2. 透過管道處理所有影格
 3. 在 `output_videos/output_video.avi` 生成標註的輸出影片
+4. **新功能：自動匯出分析資料到結構化檔案（JSON 和 CSV）**
 
 **注意**：首次執行可能需要更長時間。後續執行使用快取的 stub 檔案以加快處理速度。
 
@@ -336,6 +337,8 @@ python main.py
 
 ## 輸出結果
 
+### 1. 標註影片
+
 生成的影片包括：
 - 彩色編碼的球員追蹤（帶有球隊顏色的橢圓）
 - 球衣上的球員 ID
@@ -345,6 +348,54 @@ python main.py
 - 相機移動 X/Y 座標
 - 個別球員速度（公里/小時）
 - 個別球員行進距離（米）
+
+### 2. 分析資料匯出（新功能！）
+
+系統現在會自動將分析結果匯出為結構化檔案格式，便於進一步分析：
+
+#### 匯出的檔案：
+
+1. **`*_player_stats.csv`** - 球員統計資料（CSV 格式）
+   - 每幀的球員位置、速度、距離
+   - 球隊分配
+   - 控球狀態
+   - 邊界框座標
+
+2. **`*_ball_tracking.json`** - 足球追蹤資料（JSON 格式）
+   - 每幀的足球位置
+   - 邊界框資訊
+
+3. **`*_team_possession.json`** - 球隊控球統計（JSON 格式）
+   - 各球隊控球幀數
+   - 控球百分比
+   - 逐幀控球記錄
+
+4. **`*_camera_movement.csv`** - 相機移動資料（CSV 格式）
+   - 每幀的 X/Y 軸相機移動
+   - 移動向量
+
+5. **`*_summary.json`** - 綜合摘要（JSON 格式）
+   - 球員摘要統計（最高速度、總距離、控球時間）
+   - 球隊控球摘要
+   - 足球偵測統計
+   - 相機移動摘要
+
+#### 使用匯出資料：
+
+```python
+# 範例：讀取球員統計資料
+import pandas as pd
+player_stats = pd.read_csv('output_videos/analysis_player_stats_*.csv')
+
+# 範例：讀取綜合摘要
+import json
+with open('output_videos/analysis_summary_*.json', 'r') as f:
+    summary = json.load(f)
+    print(f"球隊 1 控球率: {summary['team_possession']['team_1']['percentage']}%")
+```
+
+**圖形介面控制：** 在 Qt GUI 中，可以使用「匯出分析資料（JSON/CSV）」核取方塊來啟用或停用資料匯出功能。
+
 
 ## 專案結構
 
@@ -382,7 +433,8 @@ foot/
 └── utils/                           # 輔助函數
     ├── __init__.py
     ├── bbox_utils.py               # 邊界框工具
-    └── video_utils.py              # 影片 I/O 工具
+    ├── video_utils.py              # 影片 I/O 工具
+    └── data_export.py              # 資料匯出工具（新）
 ```
 
 ## 技術細節

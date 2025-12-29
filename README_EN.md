@@ -445,6 +445,8 @@ The script will:
 
 ## Output
 
+### 1. Annotated Video
+
 The generated video includes:
 - Color-coded player tracking (ellipses with team colors)
 - Player IDs on jerseys
@@ -454,6 +456,54 @@ The generated video includes:
 - Camera movement X/Y coordinates
 - Individual player speed (km/h)
 - Individual player distance traveled (meters)
+
+### 2. Analysis Data Export (NEW Feature!)
+
+The system now automatically exports analysis results to structured file formats for further analysis:
+
+#### Exported Files:
+
+1. **`*_player_stats.csv`** - Player statistics (CSV format)
+   - Player positions, speed, distance per frame
+   - Team assignments
+   - Ball possession status
+   - Bounding box coordinates
+
+2. **`*_ball_tracking.json`** - Ball tracking data (JSON format)
+   - Ball position per frame
+   - Bounding box information
+
+3. **`*_team_possession.json`** - Team possession statistics (JSON format)
+   - Frames with possession for each team
+   - Possession percentages
+   - Frame-by-frame possession record
+
+4. **`*_camera_movement.csv`** - Camera movement data (CSV format)
+   - X/Y camera movement per frame
+   - Movement vectors
+
+5. **`*_summary.json`** - Comprehensive summary (JSON format)
+   - Player summary statistics (max speed, total distance, ball possession time)
+   - Team possession summary
+   - Ball detection statistics
+   - Camera movement summary
+
+#### Using Exported Data:
+
+```python
+# Example: Read player statistics
+import pandas as pd
+player_stats = pd.read_csv('output_videos/analysis_player_stats_*.csv')
+
+# Example: Read comprehensive summary
+import json
+with open('output_videos/analysis_summary_*.json', 'r') as f:
+    summary = json.load(f)
+    print(f"Team 1 possession: {summary['team_possession']['team_1']['percentage']}%")
+```
+
+**GUI Control:** In the Qt GUI, use the "Export analysis data (JSON/CSV)" checkbox to enable or disable data export.
+
 
 ## Project Structure
 
@@ -491,7 +541,8 @@ foot/
 └── utils/                           # Helper functions
     ├── __init__.py
     ├── bbox_utils.py               # Bounding box utilities
-    └── video_utils.py              # Video I/O utilities
+    ├── video_utils.py              # Video I/O utilities
+    └── data_export.py              # Data export utilities (NEW)
 ```
 
 ## Technical Details
