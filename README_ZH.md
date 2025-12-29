@@ -317,23 +317,42 @@ python qt_main.py
 ### 選項 2：命令列腳本
 
 ```bash
-# 執行分析腳本
+# 使用預設設定執行
 python main.py
+
+# 使用自訂輸入/輸出執行
+python main.py --input my_video.mp4 --output results/my_output.avi
+
+# 不使用快取執行（從頭處理）
+python main.py --no-cache
+
+# 不匯出資料執行
+python main.py --no-export
+
+# 自訂匯出設定
+python main.py --export-dir results --export-prefix my_analysis
+
+# 顯示所有可用選項
+python main.py --help
 ```
 
+#### 命令列參數：
+
+- `--input`, `-i`：輸入影片檔案路徑（預設：`input_videos/08fd33_4.mp4`）
+- `--output`, `-o`：輸出影片檔案路徑（預設：`output_videos/output_video.avi`）
+- `--model`, `-m`：YOLO 模型檔案路徑（預設：`models/best.pt`）
+- `--no-cache`：停用快取使用（較慢但從頭處理）
+- `--no-export`：停用資料匯出到 JSON/CSV 檔案
+- `--export-dir`：儲存匯出資料檔案的目錄（預設：`output_videos`）
+- `--export-prefix`：匯出資料檔案的前綴（預設：`analysis`）
+
 腳本將：
-1. 從 `input_videos/08fd33_4.mp4` 讀取輸入影片
+1. 從指定路徑讀取輸入影片
 2. 透過管道處理所有影格
-3. 在 `output_videos/output_video.avi` 生成標註的輸出影片
-4. **新功能：自動匯出分析資料到結構化檔案（JSON 和 CSV）**
+3. 在指定路徑生成標註的輸出影片
+4. 將分析資料匯出到結構化檔案（除非使用 `--no-export`）
 
-**注意**：首次執行可能需要更長時間。後續執行使用快取的 stub 檔案以加快處理速度。
-
-### main.py 中的配置選項：
-- `read_from_stub=True`：使用快取的追蹤/相機資料
-- `stub_path`：快取檔案的路徑
-- 影片輸入路徑
-- 輸出影片路徑
+**注意**：首次執行可能需要更長時間。後續執行使用快取的 stub 檔案以加快處理速度（除非使用 `--no-cache`）。
 
 ## 輸出結果
 

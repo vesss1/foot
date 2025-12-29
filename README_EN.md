@@ -426,22 +426,42 @@ python qt_main.py
 ### Option 2: Command Line Script
 
 ```bash
-# Run the analysis script
+# Run with default settings
 python main.py
+
+# Run with custom input/output
+python main.py --input my_video.mp4 --output results/my_output.avi
+
+# Run without cache (process from scratch)
+python main.py --no-cache
+
+# Run without data export
+python main.py --no-export
+
+# Customize export settings
+python main.py --export-dir results --export-prefix my_analysis
+
+# Show all available options
+python main.py --help
 ```
 
+#### Command-line Arguments:
+
+- `--input`, `-i`: Path to input video file (default: `input_videos/08fd33_4.mp4`)
+- `--output`, `-o`: Path to output video file (default: `output_videos/output_video.avi`)
+- `--model`, `-m`: Path to YOLO model file (default: `models/best.pt`)
+- `--no-cache`: Disable cache usage (slower but processes from scratch)
+- `--no-export`: Disable data export to JSON/CSV files
+- `--export-dir`: Directory to save exported data files (default: `output_videos`)
+- `--export-prefix`: Prefix for exported data files (default: `analysis`)
+
 The script will:
-1. Read the input video from `input_videos/08fd33_4.mp4`
+1. Read the input video from the specified path
 2. Process all frames through the pipeline
-3. Generate annotated output video at `output_videos/output_video.avi`
+3. Generate annotated output video at the specified path
+4. Export analysis data to structured files (unless `--no-export` is used)
 
-**Note**: First run may take longer. Subsequent runs use cached stub files for faster processing.
-
-### Configuration Options in main.py:
-- `read_from_stub=True`: Use cached tracking/camera data
-- `stub_path`: Path to cache files
-- Video input path
-- Output video path
+**Note**: First run may take longer. Subsequent runs use cached stub files for faster processing (unless `--no-cache` is used).
 
 ## Output
 
