@@ -1,4 +1,4 @@
-from utils import read_video, save_video
+from utils import read_video, save_video, output_data
 from trackers import Tracker
 import cv2
 import numpy as np
@@ -82,6 +82,9 @@ def main():
 
     # Save video
     save_video(output_video_frames, 'output_videos/output_video.avi')
+
+    # Output data to file
+    output_data(tracks, 'output_videos/data_output.json')
 
 if __name__ == '__main__':
     main()
