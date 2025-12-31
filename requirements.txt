@@ -1,8 +1,0 @@
-ultralytics
-supervision
-opencv-python
-numpy
-matplotlib
-pandas
-scikit-learn
-PyQt5
