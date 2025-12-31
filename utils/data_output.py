@@ -27,9 +27,10 @@ def output_data(tracks, output_path='output_videos/data_output.json'):
         last_frame = len(tracks['players']) - 1
         
         # Ensure the last frame has data
-        if last_frame >= 0 and tracks['players'][last_frame]:
+        if tracks['players'][last_frame]:
             for player_id, player_data in tracks['players'][last_frame].items():
-                # Get player team (default to 1 if not available)
+                # Get player team (default to 1 if not available, which should not happen in normal flow)
+                # The main pipeline always assigns team 1 or 2
                 team = player_data.get('team', 1)
                 
                 # Get distance in meters and convert to kilometers
