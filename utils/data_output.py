@@ -1,5 +1,6 @@
 import json
 import csv
+import os
 
 
 def output_data(tracks, output_path='output_videos/data_output.json'):
@@ -15,14 +16,9 @@ def output_data(tracks, output_path='output_videos/data_output.json'):
     Returns:
         Dictionary containing the organized data
     """
-    # Initialize data structure
+    # Initialize data structure with summary only
     output_dict = {
-        'team_1': {},
-        'team_2': {},
-        'summary': {
-            'team_1_total_distance_km': 0,
-            'team_2_total_distance_km': 0
-        }
+        'summary': {}
     }
     
     # Process player tracks
@@ -30,28 +26,30 @@ def output_data(tracks, output_path='output_videos/data_output.json'):
         # Get the last frame to get final distance values
         last_frame = len(tracks['players']) - 1
         
-        for player_id, player_data in tracks['players'][last_frame].items():
-            # Get player team (default to 1 if not available)
-            team = player_data.get('team', 1)
-            
-            # Get distance in meters and convert to kilometers
-            distance_m = player_data.get('distance', 0)
-            distance_km = distance_m / 1000
-            
-            # Organize by team
-            team_key = f'team_{team}'
-            if team_key not in output_dict:
-                # Handle unexpected team IDs by creating new entries
-                output_dict[team_key] = {}
-                output_dict['summary'][f'{team_key}_total_distance_km'] = 0
-            
-            output_dict[team_key][str(player_id)] = {
-                'distance_km': round(distance_km, 3),
-                'distance_m': round(distance_m, 2)
-            }
-            
-            # Add to team total
-            output_dict['summary'][f'{team_key}_total_distance_km'] += distance_km
+        # Ensure the last frame has data
+        if last_frame >= 0 and tracks['players'][last_frame]:
+            for player_id, player_data in tracks['players'][last_frame].items():
+                # Get player team (default to 1 if not available)
+                team = player_data.get('team', 1)
+                
+                # Get distance in meters and convert to kilometers
+                distance_m = player_data.get('distance', 0)
+                distance_km = distance_m / 1000
+                
+                # Organize by team
+                team_key = f'team_{team}'
+                if team_key not in output_dict:
+                    # Create team entry and summary entry dynamically
+                    output_dict[team_key] = {}
+                    output_dict['summary'][f'{team_key}_total_distance_km'] = 0
+                
+                output_dict[team_key][str(player_id)] = {
+                    'distance_km': round(distance_km, 3),
+                    'distance_m': round(distance_m, 2)
+                }
+                
+                # Add to team total
+                output_dict['summary'][f'{team_key}_total_distance_km'] += distance_km
     
     # Round summary values
     for key in output_dict['summary']:
@@ -62,7 +60,9 @@ def output_data(tracks, output_path='output_videos/data_output.json'):
         json.dump(output_dict, f, indent=2, ensure_ascii=False)
     
     # Also save as CSV for easier viewing
-    csv_path = output_path.replace('.json', '.csv')
+    # Use os.path.splitext for robust path handling
+    base_path, ext = os.path.splitext(output_path)
+    csv_path = f'{base_path}.csv'
     with open(csv_path, 'w', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
         writer.writerow(['Team', 'Player ID', 'Distance (km)', 'Distance (m)'])
