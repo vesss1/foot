@@ -1,4 +1,4 @@
-*__pycahce__*
+*__pycache__*
 *.pyc
 output_videos/*.json
 output_videos/*.csv

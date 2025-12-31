@@ -26,7 +26,7 @@ def output_data(tracks, output_path='output_videos/data_output.json'):
     }
     
     # Process player tracks
-    if 'players' in tracks:
+    if 'players' in tracks and len(tracks['players']) > 0:
         # Get the last frame to get final distance values
         last_frame = len(tracks['players']) - 1
         
@@ -40,22 +40,22 @@ def output_data(tracks, output_path='output_videos/data_output.json'):
             
             # Organize by team
             team_key = f'team_{team}'
-            if team_key in output_dict:
-                output_dict[team_key][str(player_id)] = {
-                    'distance_km': round(distance_km, 3),
-                    'distance_m': round(distance_m, 2)
-                }
-                
-                # Add to team total
-                output_dict['summary'][f'{team_key}_total_distance_km'] += distance_km
+            if team_key not in output_dict:
+                # Handle unexpected team IDs by creating new entries
+                output_dict[team_key] = {}
+                output_dict['summary'][f'{team_key}_total_distance_km'] = 0
+            
+            output_dict[team_key][str(player_id)] = {
+                'distance_km': round(distance_km, 3),
+                'distance_m': round(distance_m, 2)
+            }
+            
+            # Add to team total
+            output_dict['summary'][f'{team_key}_total_distance_km'] += distance_km
     
     # Round summary values
-    output_dict['summary']['team_1_total_distance_km'] = round(
-        output_dict['summary']['team_1_total_distance_km'], 3
-    )
-    output_dict['summary']['team_2_total_distance_km'] = round(
-        output_dict['summary']['team_2_total_distance_km'], 3
-    )
+    for key in output_dict['summary']:
+        output_dict['summary'][key] = round(output_dict['summary'][key], 3)
     
     # Save to JSON file
     with open(output_path, 'w', encoding='utf-8') as f:
@@ -67,7 +67,10 @@ def output_data(tracks, output_path='output_videos/data_output.json'):
         writer = csv.writer(f)
         writer.writerow(['Team', 'Player ID', 'Distance (km)', 'Distance (m)'])
         
-        for team_key in ['team_1', 'team_2']:
+        # Export all teams dynamically
+        for team_key in sorted(output_dict.keys()):
+            if team_key == 'summary':
+                continue
             for player_id, data in output_dict[team_key].items():
                 writer.writerow([
                     team_key,
@@ -76,11 +79,16 @@ def output_data(tracks, output_path='output_videos/data_output.json'):
                     data['distance_m']
                 ])
         
-        # Add summary row
+        # Add summary rows
         writer.writerow([])
         writer.writerow(['Summary', '', '', ''])
-        writer.writerow(['Team 1 Total', '', output_dict['summary']['team_1_total_distance_km'], ''])
-        writer.writerow(['Team 2 Total', '', output_dict['summary']['team_2_total_distance_km'], ''])
+        for team_key in sorted(output_dict.keys()):
+            if team_key == 'summary':
+                continue
+            summary_key = f'{team_key}_total_distance_km'
+            if summary_key in output_dict['summary']:
+                team_label = team_key.replace('_', ' ').title()
+                writer.writerow([f'{team_label} Total', '', output_dict['summary'][summary_key], ''])
     
     print(f"Data output saved to {output_path} and {csv_path}")
     
