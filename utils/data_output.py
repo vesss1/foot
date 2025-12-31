@@ -56,6 +56,11 @@ def output_data(tracks, output_path='output_videos/data_output.json'):
     for key in output_dict['summary']:
         output_dict['summary'][key] = round(output_dict['summary'][key], 3)
     
+    # Create output directory if it doesn't exist
+    output_dir = os.path.dirname(output_path)
+    if output_dir and not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    
     # Save to JSON file
     with open(output_path, 'w', encoding='utf-8') as f:
         json.dump(output_dict, f, indent=2, ensure_ascii=False)
