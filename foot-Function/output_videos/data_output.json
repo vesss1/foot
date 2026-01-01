@@ -1,0 +1,54 @@
+{
+  "summary": {
+    "team_1_possession_percent": 55.23,
+    "team_2_possession_percent": 44.77
+  },
+  "team_1": {
+    "1": {
+      "distance_km": 0.523,
+      "distance_m": 523.45
+    },
+    "3": {
+      "distance_km": 0.678,
+      "distance_m": 678.12
+    },
+    "5": {
+      "distance_km": 0.512,
+      "distance_m": 512.89
+    },
+    "7": {
+      "distance_km": 0.601,
+      "distance_m": 601.34
+    },
+    "9": {
+      "distance_km": 0.489,
+      "distance_m": 489.67
+    },
+    "11": {
+      "distance_km": 0.534,
+      "distance_m": 534.21
+    }
+  },
+  "team_2": {
+    "2": {
+      "distance_km": 0.445,
+      "distance_m": 445.78
+    },
+    "4": {
+      "distance_km": 0.567,
+      "distance_m": 567.23
+    },
+    "6": {
+      "distance_km": 0.398,
+      "distance_m": 398.56
+    },
+    "8": {
+      "distance_km": 0.623,
+      "distance_m": 623.89
+    },
+    "10": {
+      "distance_km": 0.501,
+      "distance_m": 501.45
+    }
+  }
+}
