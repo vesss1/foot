@@ -11,6 +11,8 @@ from pathlib import Path
 from typing import Optional
 import json
 import csv
+import subprocess
+import platform
 
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
@@ -85,11 +87,9 @@ class FootballAnalysisGUI(QMainWindow):
         
     def setup_logging(self):
         """Configure logging to capture messages in GUI."""
-        # Create a custom handler that emits to GUI
-        self.log_handler = logging.StreamHandler()
-        self.log_handler.setLevel(logging.INFO)
-        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-        self.log_handler.setFormatter(formatter)
+        # Note: Logging is handled through custom messages in the GUI
+        # Additional logging configuration can be added here if needed
+        pass
         
     def init_ui(self):
         """Initialize the user interface."""
@@ -464,9 +464,6 @@ class FootballAnalysisGUI(QMainWindow):
         """Open the output video with default system player."""
         video_path = self.video_output_label.text()
         if os.path.exists(video_path):
-            import subprocess
-            import platform
-            
             try:
                 if platform.system() == 'Darwin':  # macOS
                     subprocess.call(['open', video_path])
