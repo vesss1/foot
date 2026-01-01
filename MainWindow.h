@@ -132,6 +132,12 @@ private:
      * @param enabled true to enable, false to disable
      */
     void setControlsEnabled(bool enabled);
+    
+    /**
+     * @brief Find Python interpreter with OpenCV installed
+     * @return Path to Python interpreter, or empty string if not found
+     */
+    QString findPythonWithOpenCV();
 
     // UI Components
     QLineEdit* m_inputVideoEdit;
@@ -153,6 +159,7 @@ private:
     
     // Configuration
     QString m_footFunctionPath;
+    QString m_pythonExecutable;
 };
 
 #endif // MAINWINDOW_H

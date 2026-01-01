@@ -86,6 +86,14 @@ MainWindow::MainWindow(QWidget *parent)
         appendOutput("WARNING: main.py not found at " + QDir(m_footFunctionPath).filePath("main.py"), true);
         appendOutput("Please verify the application is in the correct location relative to foot-Function.", true);
     }
+    
+    // Find Python interpreter with OpenCV
+    m_pythonExecutable = findPythonWithOpenCV();
+    if (!m_pythonExecutable.isEmpty()) {
+        appendOutput("Python interpreter: " + m_pythonExecutable, false);
+    } else {
+        appendOutput("WARNING: No Python interpreter with OpenCV found. Analysis may fail.", true);
+    }
 }
 
 MainWindow::~MainWindow()
@@ -265,8 +273,8 @@ void MainWindow::onRunAnalysis()
     appendOutput("Time: " + QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss"), false);
     appendOutput(QString("=").repeated(SEPARATOR_LENGTH), false);
     
-    // Build command
-    QString pythonExecutable = "python3";
+    // Use the Python executable found at initialization
+    QString pythonExecutable = m_pythonExecutable.isEmpty() ? "python3" : m_pythonExecutable;
     QString scriptPath = QDir(m_footFunctionPath).filePath("main.py");
     
     // Build arguments by modifying the script's configuration
@@ -550,4 +558,51 @@ void MainWindow::setControlsEnabled(bool enabled)
     m_browseOutputBtn->setEnabled(enabled);
     m_runBtn->setEnabled(enabled);
     m_stopBtn->setEnabled(!enabled);
+}
+
+QString MainWindow::findPythonWithOpenCV()
+{
+    // List of potential Python executables to try
+    QStringList pythonCandidates;
+    
+    // Add common Python paths
+    pythonCandidates << "/usr/bin/python3"
+                     << "/usr/local/bin/python3"
+                     << "/usr/bin/python"
+                     << "/usr/local/bin/python"
+                     << "python3"
+                     << "python";
+    
+    // On Windows, also check common installation paths
+#ifdef Q_OS_WIN
+    pythonCandidates << "C:/Python312/python.exe"
+                     << "C:/Python311/python.exe"
+                     << "C:/Python310/python.exe"
+                     << "C:/Python39/python.exe"
+                     << "C:/Python38/python.exe"
+                     << "C:/Program Files/Python312/python.exe"
+                     << "C:/Program Files/Python311/python.exe"
+                     << "C:/Program Files/Python310/python.exe";
+#endif
+    
+    // Try each candidate
+    for (const QString& candidate : pythonCandidates) {
+        QProcess testProcess;
+        testProcess.start(candidate, QStringList() << "-c" << "import cv2; print('OK')");
+        
+        if (testProcess.waitForStarted(2000)) {
+            if (testProcess.waitForFinished(5000)) {
+                QString output = QString::fromUtf8(testProcess.readAllStandardOutput()).trimmed();
+                if (output == "OK" && testProcess.exitCode() == 0) {
+                    // Found a Python with OpenCV
+                    return candidate;
+                }
+            } else {
+                testProcess.kill();
+            }
+        }
+    }
+    
+    // If no Python with OpenCV found, return python3 as fallback
+    return "python3";
 }
