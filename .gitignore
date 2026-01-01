@@ -3,3 +3,31 @@
 output_videos/*.json
 output_videos/*.csv
 output_videos/*.avi
+
+# Qt build artifacts
+*.o
+*.obj
+*.user
+*.pro.user
+*.pro.user.*
+moc_*.cpp
+moc_*.h
+qrc_*.cpp
+ui_*.h
+Makefile*
+*.Debug
+*.Release
+*.app
+*.exe
+debug/
+release/
+build/
+build-*/
+*.autosave
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+*.cmake
+!CMakeLists.txt
