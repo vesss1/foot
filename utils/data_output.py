@@ -88,29 +88,31 @@ def output_data(tracks, output_path='output_videos/data_output.json', team_ball_
     csv_path = f'{base_path}.csv'
     with open(csv_path, 'w', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
-        writer.writerow(['Team', 'Player ID', 'Distance (km)', 'Distance (m)'])
+        writer.writerow(['Team', 'Player ID', 'Distance (m)'])
         
         # Export all teams dynamically
         for team_key in sorted(output_dict.keys()):
             if team_key == 'summary':
                 continue
             for player_id, data in output_dict[team_key].items():
+                distance_m = data['distance_m']
+                # If distance is 0, show "未偵測到" instead
+                distance_display = '未偵測到' if distance_m == 0 else distance_m
                 writer.writerow([
                     team_key,
                     player_id,
-                    data['distance_km'],
-                    data['distance_m']
+                    distance_display
                 ])
         
         # Add summary rows - Team Possession Percentage
         writer.writerow([])
-        writer.writerow(['Summary - Team Possession Percentage', '', '', ''])
+        writer.writerow(['Summary - Team Possession Percentage', '', ''])
         
         # Write possession percentages
         if 'team_1_possession_percent' in output_dict['summary']:
-            writer.writerow(['Team 1 Possession', '', f"{output_dict['summary']['team_1_possession_percent']}%", ''])
+            writer.writerow(['Team 1 Possession', '', f"{output_dict['summary']['team_1_possession_percent']}%"])
         if 'team_2_possession_percent' in output_dict['summary']:
-            writer.writerow(['Team 2 Possession', '', f"{output_dict['summary']['team_2_possession_percent']}%", ''])
+            writer.writerow(['Team 2 Possession', '', f"{output_dict['summary']['team_2_possession_percent']}%"])
     
     print(f"Data output saved to {output_path} and {csv_path}")
     
