@@ -3,3 +3,8 @@
 output_videos/*.json
 output_videos/*.csv
 output_videos/*.avi
+*.log
+.DS_Store
+*.swp
+*.swo
+*~
