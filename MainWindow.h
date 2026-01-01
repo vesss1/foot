@@ -26,6 +26,12 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+    
+    // Constants
+    static constexpr int SEPARATOR_LENGTH = 60;
+    static constexpr int PROCESS_START_TIMEOUT_MS = 5000;
+    static constexpr int PROCESS_TERMINATE_TIMEOUT_MS = 5000;
+    static constexpr int PROCESS_KILL_TIMEOUT_MS = 3000;
 
 private slots:
     /**

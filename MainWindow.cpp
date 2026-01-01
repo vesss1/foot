@@ -7,13 +7,22 @@
 #include <QFileInfo>
 #include <QDir>
 #include <QDateTime>
+#include <QTemporaryFile>
+#include <QCoreApplication>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , m_process(nullptr)
 {
-    // Determine foot-Function path (relative to executable or hardcoded)
-    m_footFunctionPath = QDir(QDir::currentPath()).filePath("foot-Function");
+    // Determine foot-Function path (prefer application dir, fallback to current)
+    QString appDir = QCoreApplication::applicationDirPath();
+    QDir footDir(appDir);
+    if (footDir.exists("foot-Function")) {
+        m_footFunctionPath = footDir.filePath("foot-Function");
+    } else {
+        // Fallback to current working directory
+        m_footFunctionPath = QDir(QDir::currentPath()).filePath("foot-Function");
+    }
     
     setupUI();
     
@@ -46,7 +55,7 @@ MainWindow::~MainWindow()
 {
     if (m_process && m_process->state() != QProcess::NotRunning) {
         m_process->terminate();
-        if (!m_process->waitForFinished(3000)) {
+        if (!m_process->waitForFinished(PROCESS_KILL_TIMEOUT_MS)) {
             m_process->kill();
         }
     }
@@ -214,10 +223,10 @@ void MainWindow::onRunAnalysis()
     // Clear output console
     m_outputConsole->clear();
     
-    appendOutput("=".repeated(60), false);
+    appendOutput(QString("=").repeated(SEPARATOR_LENGTH), false);
     appendOutput("Starting Football Analysis...", false);
     appendOutput("Time: " + QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss"), false);
-    appendOutput("=".repeated(60), false);
+    appendOutput(QString("=").repeated(SEPARATOR_LENGTH), false);
     
     // Build command
     QString pythonExecutable = "python3";
@@ -252,17 +261,27 @@ void MainWindow::onRunAnalysis()
      .arg(m_outputDirEdit->text())
      .arg(m_useStubsCheckbox->isChecked() ? "True" : "False");
     
-    // Write wrapper script to temporary file
-    QString tempScriptPath = QDir(QDir::tempPath()).filePath("foot_analysis_wrapper.py");
-    QFile tempFile(tempScriptPath);
-    if (!tempFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+    // Write wrapper script to temporary file with unique name
+    QTemporaryFile* tempFile = new QTemporaryFile(
+        QDir(QDir::tempPath()).filePath("foot_analysis_wrapper_XXXXXX.py"),
+        this
+    );
+    tempFile->setAutoRemove(true);  // Auto-cleanup when process finishes
+    
+    if (!tempFile->open()) {
         QMessageBox::critical(this, "Error", "Failed to create temporary script file.");
+        delete tempFile;
         return;
     }
     
-    QTextStream out(&tempFile);
+    QTextStream out(tempFile);
     out << wrapperScript;
-    tempFile.close();
+    out.flush();
+    
+    QString tempScriptPath = tempFile->fileName();
+    tempFile->close();
+    // Note: Keep tempFile object alive until process finishes
+    // (it's owned by 'this', so it will be cleaned up when MainWindow is destroyed)
     
     appendOutput("Input Video: " + m_inputVideoEdit->text(), false);
     appendOutput("Model File: " + m_modelFileEdit->text(), false);
@@ -279,12 +298,12 @@ void MainWindow::onRunAnalysis()
     
     appendOutput("Command: " + pythonExecutable + " " + arguments.join(" "), false);
     appendOutput("Working Directory: " + m_footFunctionPath, false);
-    appendOutput("=".repeated(60), false);
+    appendOutput(QString("=").repeated(SEPARATOR_LENGTH), false);
     appendOutput("", false);
     
     m_process->start(pythonExecutable, arguments);
     
-    if (!m_process->waitForStarted(5000)) {
+    if (!m_process->waitForStarted(PROCESS_START_TIMEOUT_MS)) {
         appendOutput("ERROR: Failed to start process!", true);
         QMessageBox::critical(this, "Error", "Failed to start Python process.\n\nMake sure Python 3 is installed and accessible.");
     }
@@ -294,12 +313,12 @@ void MainWindow::onStopAnalysis()
 {
     if (m_process && m_process->state() != QProcess::NotRunning) {
         appendOutput("", false);
-        appendOutput("=".repeated(60), false);
+        appendOutput(QString("=").repeated(SEPARATOR_LENGTH), false);
         appendOutput("Stopping process...", false);
         
         m_process->terminate();
         
-        if (!m_process->waitForFinished(5000)) {
+        if (!m_process->waitForFinished(PROCESS_TERMINATE_TIMEOUT_MS)) {
             appendOutput("Process did not terminate gracefully, killing...", false);
             m_process->kill();
         }
@@ -321,7 +340,7 @@ void MainWindow::onProcessReadyReadStderr()
 void MainWindow::onProcessFinished(int exitCode, QProcess::ExitStatus exitStatus)
 {
     appendOutput("", false);
-    appendOutput("=".repeated(60), false);
+    appendOutput(QString("=").repeated(SEPARATOR_LENGTH), false);
     
     if (exitStatus == QProcess::NormalExit) {
         if (exitCode == 0) {
@@ -339,7 +358,7 @@ void MainWindow::onProcessFinished(int exitCode, QProcess::ExitStatus exitStatus
         m_statusLabel->setText("Process crashed or terminated");
     }
     
-    appendOutput("=".repeated(60), false);
+    appendOutput(QString("=").repeated(SEPARATOR_LENGTH), false);
     
     setControlsEnabled(true);
 }
