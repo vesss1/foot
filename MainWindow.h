@@ -12,6 +12,10 @@
 #include <QGroupBox>
 #include <QCheckBox>
 #include <QString>
+#include <QVideoWidget>
+#include <QMediaPlayer>
+#include <QAudioOutput>
+#include <QJsonObject>
 
 /**
  * @brief MainWindow class for Football Analysis GUI
@@ -89,6 +93,21 @@ private slots:
      * @param state New process state
      */
     void onProcessStateChanged(QProcess::ProcessState state);
+    
+    /**
+     * @brief Handle video playback button click
+     */
+    void onPlayVideo();
+    
+    /**
+     * @brief Handle video pause button click
+     */
+    void onPauseVideo();
+    
+    /**
+     * @brief Handle video stop button click
+     */
+    void onStopVideo();
 
 private:
     /**
@@ -109,10 +128,34 @@ private:
     QGroupBox* createOutputGroup();
     
     /**
+     * @brief Create the results display group
+     * @return QGroupBox with results display widgets
+     */
+    QGroupBox* createResultsGroup();
+    
+    /**
+     * @brief Create the video player group
+     * @return QGroupBox with video player widgets
+     */
+    QGroupBox* createVideoPlayerGroup();
+    
+    /**
      * @brief Create the control buttons
      * @return QHBoxLayout with control buttons
      */
     QHBoxLayout* createControlButtons();
+    
+    /**
+     * @brief Parse and display numeric results from JSON file
+     * @param jsonPath Path to the JSON output file
+     */
+    void parseAndDisplayResults(const QString& jsonPath);
+    
+    /**
+     * @brief Load and play the output video
+     * @param videoPath Path to the output video file
+     */
+    void loadOutputVideo(const QString& videoPath);
     
     /**
      * @brief Validate input parameters before running
@@ -154,12 +197,28 @@ private:
     QTextEdit* m_outputConsole;
     QLabel* m_statusLabel;
     
+    // Results display
+    QLabel* m_team1PossessionLabel;
+    QLabel* m_team2PossessionLabel;
+    QLabel* m_team1DistanceLabel;
+    QLabel* m_team2DistanceLabel;
+    
+    // Video player
+    QVideoWidget* m_videoWidget;
+    QMediaPlayer* m_mediaPlayer;
+    QAudioOutput* m_audioOutput;
+    QPushButton* m_playBtn;
+    QPushButton* m_pauseBtn;
+    QPushButton* m_stopVideoBtn;
+    
     // Process management
     QProcess* m_process;
     
     // Configuration
     QString m_footFunctionPath;
     QString m_pythonExecutable;
+    QString m_outputVideoPath;
+    QString m_outputDataPath;
 };
 
 #endif // MAINWINDOW_H

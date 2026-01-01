@@ -9,7 +9,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets Multimedia MultimediaWidgets)
 
 add_executable(FootAnalysisGUI
     main.cpp
@@ -20,6 +20,8 @@ add_executable(FootAnalysisGUI
 target_link_libraries(FootAnalysisGUI
     Qt6::Core
     Qt6::Widgets
+    Qt6::Multimedia
+    Qt6::MultimediaWidgets
 )
 
 # Set output directory

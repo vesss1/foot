@@ -11,9 +11,15 @@
 #include <QCoreApplication>
 #include <QStatusBar>
 #include <QScrollBar>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QFile>
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , m_process(nullptr)
+    , m_mediaPlayer(nullptr)
+    , m_audioOutput(nullptr)
 {
     // Determine foot-Function path by searching up from application directory
     QString appDir = QCoreApplication::applicationDirPath();
@@ -109,7 +115,7 @@ MainWindow::~MainWindow()
 void MainWindow::setupUI()
 {
     setWindowTitle("Football Analysis - Qt GUI");
-    resize(900, 700);
+    resize(1200, 900);
     
     // Create central widget and main layout
     QWidget* centralWidget = new QWidget(this);
@@ -117,7 +123,16 @@ void MainWindow::setupUI()
     
     // Add components
     mainLayout->addWidget(createInputGroup());
-    mainLayout->addWidget(createOutputGroup());
+    
+    // Create horizontal layout for output and results
+    QHBoxLayout* middleLayout = new QHBoxLayout();
+    middleLayout->addWidget(createOutputGroup(), 1);
+    middleLayout->addWidget(createResultsGroup(), 1);
+    mainLayout->addLayout(middleLayout);
+    
+    // Add video player
+    mainLayout->addWidget(createVideoPlayerGroup());
+    
     mainLayout->addLayout(createControlButtons());
     
     // Status bar
@@ -191,6 +206,84 @@ QGroupBox* MainWindow::createOutputGroup()
     m_outputConsole->setLineWrapMode(QTextEdit::NoWrap);
     
     layout->addWidget(m_outputConsole);
+    
+    return group;
+}
+
+QGroupBox* MainWindow::createResultsGroup()
+{
+    QGroupBox* group = new QGroupBox("Analysis Results", this);
+    QVBoxLayout* layout = new QVBoxLayout(group);
+    
+    // Team possession percentages
+    QLabel* possessionTitle = new QLabel("<b>Ball Possession</b>", this);
+    layout->addWidget(possessionTitle);
+    
+    m_team1PossessionLabel = new QLabel("Team 1: --", this);
+    m_team1PossessionLabel->setStyleSheet("font-size: 14px; padding: 5px;");
+    layout->addWidget(m_team1PossessionLabel);
+    
+    m_team2PossessionLabel = new QLabel("Team 2: --", this);
+    m_team2PossessionLabel->setStyleSheet("font-size: 14px; padding: 5px;");
+    layout->addWidget(m_team2PossessionLabel);
+    
+    layout->addSpacing(20);
+    
+    // Distance covered
+    QLabel* distanceTitle = new QLabel("<b>Total Distance Covered</b>", this);
+    layout->addWidget(distanceTitle);
+    
+    m_team1DistanceLabel = new QLabel("Team 1: --", this);
+    m_team1DistanceLabel->setStyleSheet("font-size: 14px; padding: 5px;");
+    layout->addWidget(m_team1DistanceLabel);
+    
+    m_team2DistanceLabel = new QLabel("Team 2: --", this);
+    m_team2DistanceLabel->setStyleSheet("font-size: 14px; padding: 5px;");
+    layout->addWidget(m_team2DistanceLabel);
+    
+    layout->addStretch();
+    
+    return group;
+}
+
+QGroupBox* MainWindow::createVideoPlayerGroup()
+{
+    QGroupBox* group = new QGroupBox("Output Video Player", this);
+    QVBoxLayout* layout = new QVBoxLayout(group);
+    
+    // Video widget
+    m_videoWidget = new QVideoWidget(this);
+    m_videoWidget->setMinimumHeight(300);
+    layout->addWidget(m_videoWidget);
+    
+    // Media player setup
+    m_mediaPlayer = new QMediaPlayer(this);
+    m_audioOutput = new QAudioOutput(this);
+    m_mediaPlayer->setAudioOutput(m_audioOutput);
+    m_mediaPlayer->setVideoOutput(m_videoWidget);
+    
+    // Playback controls
+    QHBoxLayout* controlLayout = new QHBoxLayout();
+    
+    m_playBtn = new QPushButton("Play", this);
+    m_pauseBtn = new QPushButton("Pause", this);
+    m_stopVideoBtn = new QPushButton("Stop", this);
+    
+    m_playBtn->setEnabled(false);
+    m_pauseBtn->setEnabled(false);
+    m_stopVideoBtn->setEnabled(false);
+    
+    controlLayout->addWidget(m_playBtn);
+    controlLayout->addWidget(m_pauseBtn);
+    controlLayout->addWidget(m_stopVideoBtn);
+    controlLayout->addStretch();
+    
+    layout->addLayout(controlLayout);
+    
+    // Connect signals
+    connect(m_playBtn, &QPushButton::clicked, this, &MainWindow::onPlayVideo);
+    connect(m_pauseBtn, &QPushButton::clicked, this, &MainWindow::onPauseVideo);
+    connect(m_stopVideoBtn, &QPushButton::clicked, this, &MainWindow::onStopVideo);
     
     return group;
 }
@@ -391,9 +484,25 @@ void MainWindow::onProcessFinished(int exitCode, QProcess::ExitStatus exitStatus
         if (exitCode == 0) {
             appendOutput("Process completed successfully!", false);
             m_statusLabel->setText("Analysis completed successfully");
+            
+            // Parse and display results
+            QString outputDir = m_outputDirEdit->text();
+            m_outputDataPath = QDir(outputDir).filePath("data_output.json");
+            m_outputVideoPath = QDir(outputDir).filePath("output_video.avi");
+            
+            // Load results if JSON file exists
+            if (QFileInfo::exists(m_outputDataPath)) {
+                parseAndDisplayResults(m_outputDataPath);
+            }
+            
+            // Load video if it exists
+            if (QFileInfo::exists(m_outputVideoPath)) {
+                loadOutputVideo(m_outputVideoPath);
+            }
+            
             QMessageBox::information(this, "Success", 
                 "Football analysis completed successfully!\n\n"
-                "Output files saved to:\n" + m_outputDirEdit->text());
+                "Output files saved to:\n" + outputDir);
         } else {
             appendOutput(QString("Process exited with code: %1").arg(exitCode), true);
             m_statusLabel->setText(QString("Process failed with exit code %1").arg(exitCode));
@@ -605,4 +714,119 @@ QString MainWindow::findPythonWithOpenCV()
     
     // If no Python with OpenCV found, return python3 as fallback
     return "python3";
+}
+
+void MainWindow::parseAndDisplayResults(const QString& jsonPath)
+{
+    QFile file(jsonPath);
+    if (!file.open(QIODevice::ReadOnly)) {
+        appendOutput("ERROR: Could not open results file: " + jsonPath, true);
+        return;
+    }
+    
+    QByteArray jsonData = file.readAll();
+    file.close();
+    
+    QJsonDocument doc = QJsonDocument::fromJson(jsonData);
+    if (doc.isNull() || !doc.isObject()) {
+        appendOutput("ERROR: Invalid JSON format in results file", true);
+        return;
+    }
+    
+    QJsonObject root = doc.object();
+    
+    // Parse summary data
+    if (root.contains("summary")) {
+        QJsonObject summary = root["summary"].toObject();
+        
+        // Team 1 possession
+        if (summary.contains("team_1_possession_percent")) {
+            double team1Poss = summary["team_1_possession_percent"].toDouble();
+            m_team1PossessionLabel->setText(QString("Team 1: %1%").arg(team1Poss, 0, 'f', 2));
+        }
+        
+        // Team 2 possession
+        if (summary.contains("team_2_possession_percent")) {
+            double team2Poss = summary["team_2_possession_percent"].toDouble();
+            m_team2PossessionLabel->setText(QString("Team 2: %1%").arg(team2Poss, 0, 'f', 2));
+        }
+    }
+    
+    // Calculate total distance for each team
+    double team1TotalKm = 0.0;
+    double team2TotalKm = 0.0;
+    int team1Players = 0;
+    int team2Players = 0;
+    
+    if (root.contains("team_1")) {
+        QJsonObject team1 = root["team_1"].toObject();
+        for (const QString& playerId : team1.keys()) {
+            QJsonObject playerData = team1[playerId].toObject();
+            if (playerData.contains("distance_km")) {
+                team1TotalKm += playerData["distance_km"].toDouble();
+                team1Players++;
+            }
+        }
+    }
+    
+    if (root.contains("team_2")) {
+        QJsonObject team2 = root["team_2"].toObject();
+        for (const QString& playerId : team2.keys()) {
+            QJsonObject playerData = team2[playerId].toObject();
+            if (playerData.contains("distance_km")) {
+                team2TotalKm += playerData["distance_km"].toDouble();
+                team2Players++;
+            }
+        }
+    }
+    
+    // Display team distances
+    m_team1DistanceLabel->setText(QString("Team 1: %1 km (%2 players)")
+                                   .arg(team1TotalKm, 0, 'f', 2)
+                                   .arg(team1Players));
+    m_team2DistanceLabel->setText(QString("Team 2: %1 km (%2 players)")
+                                   .arg(team2TotalKm, 0, 'f', 2)
+                                   .arg(team2Players));
+    
+    appendOutput("Results displayed successfully", false);
+}
+
+void MainWindow::loadOutputVideo(const QString& videoPath)
+{
+    if (!QFileInfo::exists(videoPath)) {
+        appendOutput("ERROR: Video file not found: " + videoPath, true);
+        return;
+    }
+    
+    // Load video into media player
+    m_mediaPlayer->setSource(QUrl::fromLocalFile(videoPath));
+    
+    // Enable playback controls
+    m_playBtn->setEnabled(true);
+    m_pauseBtn->setEnabled(true);
+    m_stopVideoBtn->setEnabled(true);
+    
+    appendOutput("Output video loaded: " + videoPath, false);
+    appendOutput("Use Play/Pause/Stop buttons to control playback", false);
+}
+
+void MainWindow::onPlayVideo()
+{
+    if (m_mediaPlayer) {
+        m_mediaPlayer->play();
+    }
+}
+
+void MainWindow::onPauseVideo()
+{
+    if (m_mediaPlayer) {
+        m_mediaPlayer->pause();
+    }
+}
+
+void MainWindow::onStopVideo()
+{
+    if (m_mediaPlayer) {
+        m_mediaPlayer->stop();
+    }
 }
