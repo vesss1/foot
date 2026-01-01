@@ -1,0 +1,326 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>FootballAnalysisMainWindow</class>
+ <widget class="QMainWindow" name="FootballAnalysisMainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1400</width>
+    <height>800</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Football Analysis - Video &amp; Statistics</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QHBoxLayout" name="mainHorizontalLayout">
+    <item>
+     <widget class="QWidget" name="videoPanel" native="true">
+      <layout class="QVBoxLayout" name="videoPanelLayout">
+       <item>
+        <widget class="QLabel" name="videoTitleLabel">
+         <property name="font">
+          <font>
+           <pointsize>18</pointsize>
+           <weight>75</weight>
+           <bold>true</bold>
+          </font>
+         </property>
+         <property name="text">
+          <string>Video Output</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="videoLabel">
+         <property name="minimumSize">
+          <size>
+           <width>800</width>
+           <height>450</height>
+          </size>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">background-color: black; border: 2px solid #ccc;</string>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="frameInfoLabel">
+         <property name="text">
+          <string>No video loaded</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="videoControlsLayout">
+         <item>
+          <widget class="QPushButton" name="playButton">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="text">
+            <string>Play</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="stopButton">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="text">
+            <string>Stop</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QSlider" name="positionSlider">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <widget class="QPushButton" name="loadVideoButton">
+         <property name="text">
+          <string>Load Video File</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item>
+     <widget class="QWidget" name="statsPanel" native="true">
+      <layout class="QVBoxLayout" name="statsPanelLayout">
+       <item>
+        <widget class="QLabel" name="statsTitleLabel">
+         <property name="font">
+          <font>
+           <pointsize>18</pointsize>
+           <weight>75</weight>
+           <bold>true</bold>
+          </font>
+         </property>
+         <property name="text">
+          <string>Match Statistics</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="possessionGroupBox">
+         <property name="title">
+          <string>Ball Possession</string>
+         </property>
+         <layout class="QGridLayout" name="possessionGridLayout">
+          <item row="0" column="0">
+           <widget class="QLabel" name="team1Label">
+            <property name="text">
+             <string>Team 1:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QLabel" name="team1PossessionLabel">
+            <property name="font">
+             <font>
+              <pointsize>24</pointsize>
+              <weight>75</weight>
+              <bold>true</bold>
+             </font>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">color: #0066cc;</string>
+            </property>
+            <property name="text">
+             <string>---%</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="team2Label">
+            <property name="text">
+             <string>Team 2:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QLabel" name="team2PossessionLabel">
+            <property name="font">
+             <font>
+              <pointsize>24</pointsize>
+              <weight>75</weight>
+              <bold>true</bold>
+             </font>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">color: #cc0000;</string>
+            </property>
+            <property name="text">
+             <string>---%</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="distanceGroupBox">
+         <property name="title">
+          <string>Running Statistics</string>
+         </property>
+         <layout class="QGridLayout" name="distanceGridLayout">
+          <item row="0" column="0">
+           <widget class="QLabel" name="totalDistanceTextLabel">
+            <property name="text">
+             <string>Total Distance:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QLabel" name="totalDistanceLabel">
+            <property name="font">
+             <font>
+              <pointsize>20</pointsize>
+              <weight>75</weight>
+              <bold>true</bold>
+             </font>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">color: #009900;</string>
+            </property>
+            <property name="text">
+             <string>--- km</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="avgDistanceTextLabel">
+            <property name="text">
+             <string>Avg per Player:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QLabel" name="avgDistanceLabel">
+            <property name="font">
+             <font>
+              <pointsize>16</pointsize>
+             </font>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">color: #006600;</string>
+            </property>
+            <property name="text">
+             <string>--- km</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="timeGroupBox">
+         <property name="title">
+          <string>Time Statistics</string>
+         </property>
+         <layout class="QGridLayout" name="timeGridLayout">
+          <item row="0" column="0">
+           <widget class="QLabel" name="videoDurationTextLabel">
+            <property name="text">
+             <string>Video Duration:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QLabel" name="videoDurationLabel">
+            <property name="font">
+             <font>
+              <pointsize>16</pointsize>
+             </font>
+            </property>
+            <property name="text">
+             <string>--- s</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="avgSpeedTextLabel">
+            <property name="text">
+             <string>Avg Speed:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QLabel" name="avgSpeedLabel">
+            <property name="font">
+             <font>
+              <pointsize>16</pointsize>
+             </font>
+            </property>
+            <property name="text">
+             <string>--- km/h</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="refreshButton">
+         <property name="text">
+          <string>Refresh Statistics</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="verticalSpacer">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1400</width>
+     <height>22</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
