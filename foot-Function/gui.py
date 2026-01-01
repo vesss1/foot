@@ -71,25 +71,24 @@ class AnalysisThread(QThread):
             self.error_occurred.emit(error_msg)
     
     def stop(self):
-        """Stop the analysis (note: actual stop implementation would need pipeline support)."""
+        """Stop the analysis gracefully."""
         self._is_running = False
+        # Note: Current pipeline doesn't support graceful cancellation
+        # Using terminate() as a fallback - pipeline should be enhanced
+        # to check for cancellation signals in future versions
         self.terminate()
 
 
 class FootballAnalysisGUI(QMainWindow):
     """Main GUI window for football video analysis."""
     
+    # Constants
+    NOT_DETECTED_TEXT = "Not Detected"
+    
     def __init__(self):
         super().__init__()
         self.analysis_thread = None
-        self.setup_logging()
         self.init_ui()
-        
-    def setup_logging(self):
-        """Configure logging to capture messages in GUI."""
-        # Note: Logging is handled through custom messages in the GUI
-        # Additional logging configuration can be added here if needed
-        pass
         
     def init_ui(self):
         """Initialize the user interface."""
@@ -515,7 +514,7 @@ class FootballAnalysisGUI(QMainWindow):
                     self.stats_table.setItem(row, 1, QTableWidgetItem(player_id))
                     
                     distance = player_stats.get('distance_m', 0)
-                    distance_text = "Not Detected" if distance == 0 else f"{distance:.2f}"
+                    distance_text = self.NOT_DETECTED_TEXT if distance == 0 else f"{distance:.2f}"
                     self.stats_table.setItem(row, 2, QTableWidgetItem(distance_text))
                     
                     row += 1

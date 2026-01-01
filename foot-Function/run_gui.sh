@@ -13,7 +13,13 @@ fi
 # Check if PyQt5 is installed
 if ! python3 -c "import PyQt5" 2>/dev/null; then
     echo "PyQt5 is not installed."
-    echo "Would you like to install the required dependencies? (y/n)"
+    echo ""
+    echo "The following packages will be installed:"
+    echo "-------------------------------------------"
+    cat requirements.txt
+    echo "-------------------------------------------"
+    echo ""
+    echo "Would you like to install these dependencies? (y/n)"
     read -r response
     if [[ "$response" =~ ^[Yy]$ ]]; then
         echo "Installing dependencies..."

@@ -15,7 +15,13 @@ REM Check if PyQt5 is installed
 python -c "import PyQt5" 2>nul
 if errorlevel 1 (
     echo PyQt5 is not installed.
-    echo Would you like to install the required dependencies? (Y/N)
+    echo.
+    echo The following packages will be installed:
+    echo -------------------------------------------
+    type requirements.txt
+    echo -------------------------------------------
+    echo.
+    echo Would you like to install these dependencies? (Y/N)
     set /p response=
     if /i "%response%"=="Y" (
         echo Installing dependencies...
