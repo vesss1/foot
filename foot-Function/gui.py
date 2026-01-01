@@ -464,6 +464,11 @@ class FootballAnalysisGUI(QMainWindow):
         video_path = self.video_output_label.text()
         if os.path.exists(video_path):
             try:
+                # Validate that path is a file and not a malicious path
+                if not os.path.isfile(video_path):
+                    QMessageBox.warning(self, "Error", "Invalid file path.")
+                    return
+                
                 if platform.system() == 'Darwin':  # macOS
                     subprocess.call(['open', video_path])
                 elif platform.system() == 'Windows':
@@ -514,6 +519,8 @@ class FootballAnalysisGUI(QMainWindow):
                     self.stats_table.setItem(row, 1, QTableWidgetItem(player_id))
                     
                     distance = player_stats.get('distance_m', 0)
+                    # Display "Not Detected" for 0 or missing distance values
+                    # Note: The pipeline sets distance to 0 when player is not tracked
                     distance_text = self.NOT_DETECTED_TEXT if distance == 0 else f"{distance:.2f}"
                     self.stats_table.setItem(row, 2, QTableWidgetItem(distance_text))
                     
