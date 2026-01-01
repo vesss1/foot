@@ -255,18 +255,28 @@ class FootballAnalysisUI(QMainWindow):
         
         # Get video properties
         self.fps = self.video_capture.get(cv2.CAP_PROP_FPS)
+        
+        # Validate FPS to prevent division by zero
+        if self.fps <= 0 or self.fps > 300:  # Sanity check
+            self.fps = 30  # Default to 30 FPS
+            
         self.total_frames = int(self.video_capture.get(cv2.CAP_PROP_FRAME_COUNT))
         
         # Load all frames into memory for smoother playback
-        # For large videos, this could be optimized
+        # Note: For very large videos (>5 minutes), consider implementing
+        # a frame buffer with lazy loading to reduce memory usage
         self.frames = []
-        while True:
+        frame_count = 0
+        max_frames = 18000  # Limit to ~10 minutes at 30fps to prevent memory issues
+        
+        while frame_count < max_frames:
             ret, frame = self.video_capture.read()
             if not ret:
                 break
             # Convert BGR to RGB for Qt
             frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             self.frames.append(frame_rgb)
+            frame_count += 1
         
         self.video_capture.release()
         self.total_frames = len(self.frames)
@@ -274,6 +284,15 @@ class FootballAnalysisUI(QMainWindow):
         if self.total_frames == 0:
             QMessageBox.warning(self, "Error", "No frames found in video")
             return
+        
+        # Warn if video was truncated
+        if frame_count >= max_frames:
+            QMessageBox.information(
+                self, 
+                "Video Truncated", 
+                f"Video exceeds maximum length. Only first {max_frames} frames loaded.\n"
+                f"For longer videos, consider splitting the analysis."
+            )
         
         # Reset to first frame
         self.current_frame_idx = 0

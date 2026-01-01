@@ -158,7 +158,24 @@ def test_ui_labels(window):
 
 
 def main():
-    """Run all tests"""
+    """
+    Run all tests for the Qt UI application.
+    
+    Tests the following components:
+    - UI instantiation and initialization
+    - Data loading from JSON files
+    - Video loading and frame processing
+    - Statistics calculation accuracy
+    - UI label updates and display
+    
+    Returns:
+        int: 0 if all tests pass, 1 if any test fails
+    
+    Requirements:
+    - Test data files must exist in output_videos/ directory
+    - QT_QPA_PLATFORM environment variable set to 'offscreen'
+    - PyQt5 and OpenCV must be installed
+    """
     print("="*60)
     print("Qt UI Application Test Suite")
     print("="*60)
