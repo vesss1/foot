@@ -13,7 +13,7 @@ MainWindow::MainWindow(QWidget *parent)
     , m_process(nullptr)
 {
     // Determine foot-Function path (relative to executable or hardcoded)
-    m_footFunctionPath = QDir::currentPath() + "/foot-Function";
+    m_footFunctionPath = QDir(QDir::currentPath()).filePath("foot-Function");
     
     setupUI();
     
@@ -33,9 +33,9 @@ MainWindow::MainWindow(QWidget *parent)
             this, &MainWindow::onProcessStateChanged);
     
     // Set default values
-    m_inputVideoEdit->setText(m_footFunctionPath + "/input_videos/08fd33_4.mp4");
-    m_modelFileEdit->setText(m_footFunctionPath + "/models/best.pt");
-    m_outputDirEdit->setText(m_footFunctionPath + "/output_videos");
+    m_inputVideoEdit->setText(QDir(m_footFunctionPath).filePath("input_videos/08fd33_4.mp4"));
+    m_modelFileEdit->setText(QDir(m_footFunctionPath).filePath("models/best.pt"));
+    m_outputDirEdit->setText(QDir(m_footFunctionPath).filePath("output_videos"));
     m_useStubsCheckbox->setChecked(true);
     
     appendOutput("Football Analysis GUI initialized.", false);
@@ -169,7 +169,7 @@ void MainWindow::onBrowseInputVideo()
     QString fileName = QFileDialog::getOpenFileName(
         this,
         "Select Input Video",
-        m_inputVideoEdit->text().isEmpty() ? m_footFunctionPath + "/input_videos" : m_inputVideoEdit->text(),
+        m_inputVideoEdit->text().isEmpty() ? QDir(m_footFunctionPath).filePath("input_videos") : m_inputVideoEdit->text(),
         "Video Files (*.mp4 *.avi *.mov *.mkv);;All Files (*.*)"
     );
     
@@ -183,7 +183,7 @@ void MainWindow::onBrowseModelFile()
     QString fileName = QFileDialog::getOpenFileName(
         this,
         "Select Model File",
-        m_modelFileEdit->text().isEmpty() ? m_footFunctionPath + "/models" : m_modelFileEdit->text(),
+        m_modelFileEdit->text().isEmpty() ? QDir(m_footFunctionPath).filePath("models") : m_modelFileEdit->text(),
         "Model Files (*.pt *.pth);;All Files (*.*)"
     );
     
@@ -197,7 +197,7 @@ void MainWindow::onBrowseOutputDir()
     QString dirName = QFileDialog::getExistingDirectory(
         this,
         "Select Output Directory",
-        m_outputDirEdit->text().isEmpty() ? m_footFunctionPath + "/output_videos" : m_outputDirEdit->text()
+        m_outputDirEdit->text().isEmpty() ? QDir(m_footFunctionPath).filePath("output_videos") : m_outputDirEdit->text()
     );
     
     if (!dirName.isEmpty()) {
@@ -221,7 +221,7 @@ void MainWindow::onRunAnalysis()
     
     // Build command
     QString pythonExecutable = "python3";
-    QString scriptPath = m_footFunctionPath + "/main.py";
+    QString scriptPath = QDir(m_footFunctionPath).filePath("main.py");
     
     // Build arguments by modifying the script's configuration
     // Since we can't modify the script, we'll pass environment variables
@@ -253,7 +253,7 @@ void MainWindow::onRunAnalysis()
      .arg(m_useStubsCheckbox->isChecked() ? "True" : "False");
     
     // Write wrapper script to temporary file
-    QString tempScriptPath = QDir::tempPath() + "/foot_analysis_wrapper.py";
+    QString tempScriptPath = QDir(QDir::tempPath()).filePath("foot_analysis_wrapper.py");
     QFile tempFile(tempScriptPath);
     if (!tempFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
         QMessageBox::critical(this, "Error", "Failed to create temporary script file.");
@@ -447,7 +447,7 @@ bool MainWindow::validateInputs()
     }
     
     // Check if main.py exists
-    QFileInfo mainScript(m_footFunctionPath + "/main.py");
+    QFileInfo mainScript(QDir(m_footFunctionPath).filePath("main.py"));
     if (!mainScript.exists()) {
         QMessageBox::warning(this, "Validation Error", 
             "main.py not found in foot-Function directory:\n" + m_footFunctionPath);
