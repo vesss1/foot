@@ -92,9 +92,11 @@ def save_video(output_video_frames, output_video_path):
     except (IndexError, AttributeError) as e:
         raise ValueError(f"Invalid frame data: {e}")
     
-    # Initialize VideoWriter
+    # Initialize VideoWriter with validated parameters
     fourcc = cv2.VideoWriter_fourcc(*'XVID')
     fps = 24
+    
+    logger.info(f"Initializing VideoWriter with codec=XVID, fps={fps}, size=({width}, {height})")
     
     out = cv2.VideoWriter(
         output_video_path,
@@ -103,35 +105,58 @@ def save_video(output_video_frames, output_video_path):
         (width, height)
     )
     
+    # Critical check: VideoWriter must be opened before writing
     if not out.isOpened():
+        out.release()
         raise IOError(
-            f"Failed to create VideoWriter for {output_video_path}. "
-            f"Check that output path is valid and codec is supported."
+            f"Failed to open VideoWriter for {output_video_path}. "
+            f"Codec 'XVID' may not be supported. "
+            f"Frame size: {width}x{height}, FPS: {fps}"
         )
     
+    logger.info("VideoWriter opened successfully")
+    
     # Write frames
+    frames_written = 0
+    frames_skipped = 0
+    
     try:
         for i, frame in enumerate(output_video_frames):
             if frame is None:
                 logger.warning(f"Skipping None frame at index {i}")
+                frames_skipped += 1
+                continue
+            
+            # Validate frame has correct shape
+            if len(frame.shape) < 2:
+                logger.warning(f"Skipping frame {i}: invalid shape {frame.shape}")
+                frames_skipped += 1
                 continue
                 
             # Validate frame dimensions match
-            if frame.shape[:2] != (height, width):
+            frame_height, frame_width = frame.shape[:2]
+            if (frame_height, frame_width) != (height, width):
                 logger.warning(
-                    f"Frame {i} has different dimensions {frame.shape[:2]}, "
-                    f"expected ({height}, {width}). Resizing..."
+                    f"Frame {i} has different dimensions ({frame_width}x{frame_height}), "
+                    f"expected ({width}x{height}). Resizing..."
                 )
                 frame = cv2.resize(frame, (width, height))
             
-            success = out.write(frame)
-            if not success:
-                logger.warning(f"Failed to write frame {i}")
+            # Write frame - cv2.VideoWriter.write() returns None, not boolean
+            # We need to check if writer is still open instead
+            if not out.isOpened():
+                logger.error(f"VideoWriter closed unexpectedly at frame {i}")
+                break
+            
+            out.write(frame)
+            frames_written += 1
                 
     except Exception as e:
+        logger.error(f"Error writing frames to video: {e}")
         raise IOError(f"Error writing frames to video: {e}")
     finally:
         out.release()
+        logger.info(f"VideoWriter released. Frames written: {frames_written}, skipped: {frames_skipped}")
     
     # Verify output file was created
     if not os.path.exists(output_video_path):
