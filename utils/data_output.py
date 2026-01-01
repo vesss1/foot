@@ -9,7 +9,7 @@ def output_data(tracks, output_path='output_videos/data_output.json', team_ball_
     Output numerical data from video analysis including:
     - Distance covered by each player (in kilometers)
     - Data separated by team
-    - Ball possession count per team
+    - Ball possession percentage per team
     
     Args:
         tracks: Dictionary containing tracking information for players
@@ -24,13 +24,25 @@ def output_data(tracks, output_path='output_videos/data_output.json', team_ball_
         'summary': {}
     }
     
-    # Calculate ball possession counts if provided
+    # Calculate ball possession percentages if provided
     if team_ball_control is not None:
         # Count possession for each team
         unique_teams, counts = np.unique(team_ball_control, return_counts=True)
+        
+        # Build possession counts dictionary (excluding 0 which represents no possession)
+        possession_counts = {}
         for team_id, count in zip(unique_teams, counts):
-            if team_id > 0:  # Ignore 0 which represents no possession
-                output_dict['summary'][f'team_{int(team_id)}_possession_count'] = int(count)
+            if team_id > 0:
+                possession_counts[int(team_id)] = int(count)
+        
+        # Calculate total possession (sum of all teams)
+        total_possession = sum(possession_counts.values())
+        
+        # Calculate possession percentages
+        if total_possession > 0:
+            for team_id, count in possession_counts.items():
+                percent = (count / total_possession) * 100
+                output_dict['summary'][f'team_{team_id}_possession_percent'] = round(percent, 2)
     
     # Process player tracks
     if 'players' in tracks and len(tracks['players']) > 0:
@@ -59,7 +71,7 @@ def output_data(tracks, output_path='output_videos/data_output.json', team_ball_
                     'distance_m': round(distance_m, 2)
                 }
     
-    # No rounding needed for possession counts (already integers)
+    # No rounding needed for possession percentages (already rounded to 2 decimal places)
     
     # Create output directory if it doesn't exist
     output_dir = os.path.dirname(output_path)
@@ -90,15 +102,15 @@ def output_data(tracks, output_path='output_videos/data_output.json', team_ball_
                     data['distance_m']
                 ])
         
-        # Add summary rows - only possession counts
+        # Add summary rows - Team Possession Percentage
         writer.writerow([])
-        writer.writerow(['Summary', '', '', ''])
+        writer.writerow(['Summary - Team Possession Percentage', '', '', ''])
         
-        # Write possession counts
-        if 'team_1_possession_count' in output_dict['summary']:
-            writer.writerow(['Team 1 Possession', '', output_dict['summary']['team_1_possession_count'], ''])
-        if 'team_2_possession_count' in output_dict['summary']:
-            writer.writerow(['Team 2 Possession', '', output_dict['summary']['team_2_possession_count'], ''])
+        # Write possession percentages
+        if 'team_1_possession_percent' in output_dict['summary']:
+            writer.writerow(['Team 1 Possession', '', f"{output_dict['summary']['team_1_possession_percent']}%", ''])
+        if 'team_2_possession_percent' in output_dict['summary']:
+            writer.writerow(['Team 2 Possession', '', f"{output_dict['summary']['team_2_possession_percent']}%", ''])
     
     print(f"Data output saved to {output_path} and {csv_path}")
     
