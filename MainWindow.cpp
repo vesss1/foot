@@ -15,14 +15,41 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , m_process(nullptr)
 {
-    // Determine foot-Function path (prefer application dir, fallback to current)
+    // Determine foot-Function path by searching up from application directory
     QString appDir = QCoreApplication::applicationDirPath();
-    QDir footDir(appDir);
-    if (footDir.exists("foot-Function")) {
-        m_footFunctionPath = footDir.filePath("foot-Function");
-    } else {
-        // Fallback to current working directory
-        m_footFunctionPath = QDir(QDir::currentPath()).filePath("foot-Function");
+    QDir searchDir(appDir);
+    
+    // Search for foot-Function in current dir and parent directories (up to 5 levels)
+    bool found = false;
+    for (int i = 0; i < 5 && !found; ++i) {
+        if (searchDir.exists("foot-Function")) {
+            QDir footFuncDir = searchDir;
+            if (footFuncDir.cd("foot-Function") && QFileInfo(footFuncDir.filePath("main.py")).exists()) {
+                m_footFunctionPath = searchDir.filePath("foot-Function");
+                found = true;
+                break;
+            }
+        }
+        if (!searchDir.cdUp()) {
+            break;
+        }
+    }
+    
+    // If not found, try current working directory
+    if (!found) {
+        QDir cwdDir(QDir::currentPath());
+        if (cwdDir.exists("foot-Function")) {
+            QDir footFuncDir = cwdDir;
+            if (footFuncDir.cd("foot-Function") && QFileInfo(footFuncDir.filePath("main.py")).exists()) {
+                m_footFunctionPath = cwdDir.filePath("foot-Function");
+                found = true;
+            }
+        }
+    }
+    
+    // If still not found, set a default and let validation handle it
+    if (!found) {
+        m_footFunctionPath = QDir(appDir).filePath("foot-Function");
     }
     
     setupUI();
@@ -50,6 +77,15 @@ MainWindow::MainWindow(QWidget *parent)
     
     appendOutput("Football Analysis GUI initialized.", false);
     appendOutput("foot-Function path: " + m_footFunctionPath, false);
+    
+    // Verify main.py exists at initialization
+    QFileInfo mainPy(QDir(m_footFunctionPath).filePath("main.py"));
+    if (mainPy.exists()) {
+        appendOutput("Verified: main.py found at " + mainPy.absoluteFilePath(), false);
+    } else {
+        appendOutput("WARNING: main.py not found at " + QDir(m_footFunctionPath).filePath("main.py"), true);
+        appendOutput("Please verify the application is in the correct location relative to foot-Function.", true);
+    }
 }
 
 MainWindow::~MainWindow()
