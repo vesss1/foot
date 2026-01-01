@@ -1,0 +1,75 @@
+Qt Creator UI 檔案已建立 / Qt Creator UI File Created
+================================================
+
+📁 新增檔案 / New Files:
+   ├── football_analysis_ui.ui (9.7 KB)
+   │   └── Qt Designer/Creator 視覺化 UI 設計檔
+   │       Visual UI design file for Qt Designer/Creator
+   │
+   ├── qt_ui_app_from_designer.py (12 KB)
+   │   └── 使用 .ui 檔案的 Python 程式
+   │       Python app that loads the .ui file
+   │
+   └── QT_CREATOR_GUIDE.md (8.4 KB)
+       └── 完整使用指南（中英雙語）
+           Complete usage guide (Chinese/English)
+
+🎨 使用方式 / Usage:
+
+   方法 1 - Qt Designer 視覺化編輯:
+   Method 1 - Visual editing with Qt Designer:
+   
+   $ designer football_analysis_ui.ui
+   或 / or
+   $ qtcreator football_analysis_ui.ui
+
+   方法 2 - 直接執行 (載入 .ui 檔):
+   Method 2 - Run directly (loads .ui file):
+   
+   $ python qt_ui_app_from_designer.py
+
+   方法 3 - 原始版本 (不需要 .ui 檔):
+   Method 3 - Original version (no .ui needed):
+   
+   $ python qt_ui_app.py
+
+🔧 UI 檔案包含 / UI File Contains:
+
+   • 主視窗 (1400x800)
+     Main window (1400x800)
+   
+   • 左側面板 - 影片播放器
+     Left panel - Video player
+     ├── Video display label
+     ├── Play/Pause button
+     ├── Stop button  
+     ├── Position slider
+     └── Load video button
+   
+   • 右側面板 - 統計資料
+     Right panel - Statistics
+     ├── Ball Possession (Team 1 & 2)
+     ├── Running Statistics (Total & Average)
+     ├── Time Statistics (Duration & Speed)
+     └── Refresh button
+
+✨ 優點 / Advantages:
+
+   ✓ 視覺化拖放設計
+     Visual drag-and-drop design
+   
+   ✓ 即時預覽 UI 變更
+     Live preview of UI changes
+   
+   ✓ 不需要寫程式碼即可修改介面
+     Modify interface without coding
+   
+   ✓ 標準 Qt 設計檔格式
+     Standard Qt Designer file format
+   
+   ✓ 分離 UI 設計與程式邏輯
+     Separate UI design from program logic
+
+📖 詳細說明請參考:
+   See QT_CREATOR_GUIDE.md for details
+
