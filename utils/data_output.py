@@ -96,8 +96,8 @@ def output_data(tracks, output_path='output_videos/data_output.json', team_ball_
                 continue
             for player_id, data in output_dict[team_key].items():
                 distance_m = data['distance_m']
-                # If distance is 0, show "未偵測到" instead
-                distance_display = '未偵測到' if distance_m == 0 else distance_m
+                # If distance is 0, show "Not Detected" instead
+                distance_display = 'Not Detected' if distance_m == 0 else distance_m
                 writer.writerow([
                     team_key,
                     player_id,
