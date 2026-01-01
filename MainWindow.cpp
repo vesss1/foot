@@ -9,7 +9,8 @@
 #include <QDateTime>
 #include <QTemporaryFile>
 #include <QCoreApplication>
-
+#include <QStatusBar>
+#include <QScrollBar>
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , m_process(nullptr)
