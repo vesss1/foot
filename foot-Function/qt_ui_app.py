@@ -435,7 +435,7 @@ class FootballAnalysisUI(QMainWindow):
             
             self.update_statistics_display()
             
-        except Exception as e:
+        except (FileNotFoundError, json.JSONDecodeError, ValueError, KeyError) as e:
             QMessageBox.warning(
                 self,
                 "Error",
@@ -485,7 +485,8 @@ class FootballAnalysisUI(QMainWindow):
                     if duration_hours > 0:
                         avg_speed = avg_distance / duration_hours
                         self.avg_speed_label.setText(f"{avg_speed:.2f} km/h")
-                except:
+                except (ValueError, IndexError, ZeroDivisionError):
+                    # Invalid duration format or calculation error
                     pass
 
 
