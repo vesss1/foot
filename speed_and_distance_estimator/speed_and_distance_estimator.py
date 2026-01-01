@@ -41,7 +41,7 @@ class SpeedAndDistance_Estimator():
                     
                     total_distance[object][track_id] += distance_covered
 
-                    for frame_num_batch in range(frame_num,last_frame):
+                    for frame_num_batch in range(frame_num, last_frame + 1):
                         if track_id not in tracks[object][frame_num_batch]:
                             continue
                         tracks[object][frame_num_batch][track_id]['speed'] = speed_km_per_hour
