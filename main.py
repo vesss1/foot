@@ -316,13 +316,13 @@ class VideoAnalysisPipeline:
         except Exception as e:
             raise RuntimeError(f"Failed to save output video: {e}")
     
-    def _save_output_data(self, tracks: Dict[str, Any]) -> str:
+    def _save_output_data(self, tracks: Dict[str, Any], team_ball_control: np.ndarray) -> str:
         """Save output data with error handling."""
         try:
             output_path = os.path.join(self.output_dir, 'data_output.json')
             logger.info(f"Saving output data to: {output_path}")
             
-            output_data(tracks, output_path)
+            output_data(tracks, output_path, team_ball_control)
             
             # Verify output files were created
             if not os.path.exists(output_path):
@@ -385,7 +385,7 @@ class VideoAnalysisPipeline:
             
             # Save outputs
             video_path = self._save_output_video(output_frames)
-            data_path = self._save_output_data(tracks)
+            data_path = self._save_output_data(tracks, team_ball_control)
             
             logger.info("="*60)
             logger.info("Pipeline completed successfully!")

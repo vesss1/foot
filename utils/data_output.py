@@ -1,17 +1,20 @@
 import json
 import csv
 import os
+import numpy as np
 
 
-def output_data(tracks, output_path='output_videos/data_output.json'):
+def output_data(tracks, output_path='output_videos/data_output.json', team_ball_control=None):
     """
     Output numerical data from video analysis including:
     - Distance covered by each player (in kilometers)
     - Data separated by team
+    - Ball possession count per team
     
     Args:
         tracks: Dictionary containing tracking information for players
         output_path: Path to save the output data (default: 'output_videos/data_output.json')
+        team_ball_control: numpy array with team possession per frame (optional)
     
     Returns:
         Dictionary containing the organized data
@@ -20,6 +23,14 @@ def output_data(tracks, output_path='output_videos/data_output.json'):
     output_dict = {
         'summary': {}
     }
+    
+    # Calculate ball possession counts if provided
+    if team_ball_control is not None:
+        # Count possession for each team
+        unique_teams, counts = np.unique(team_ball_control, return_counts=True)
+        for team_id, count in zip(unique_teams, counts):
+            if team_id > 0:  # Ignore 0 which represents no possession
+                output_dict['summary'][f'team_{int(team_id)}_possession_count'] = int(count)
     
     # Process player tracks
     if 'players' in tracks and len(tracks['players']) > 0:
@@ -40,21 +51,15 @@ def output_data(tracks, output_path='output_videos/data_output.json'):
                 # Organize by team
                 team_key = f'team_{team}'
                 if team_key not in output_dict:
-                    # Create team entry and summary entry dynamically
+                    # Create team entry dynamically
                     output_dict[team_key] = {}
-                    output_dict['summary'][f'{team_key}_total_distance_km'] = 0
                 
                 output_dict[team_key][str(player_id)] = {
                     'distance_km': round(distance_km, 3),
                     'distance_m': round(distance_m, 2)
                 }
-                
-                # Add to team total
-                output_dict['summary'][f'{team_key}_total_distance_km'] += distance_km
     
-    # Round summary values
-    for key in output_dict['summary']:
-        output_dict['summary'][key] = round(output_dict['summary'][key], 3)
+    # No rounding needed for possession counts (already integers)
     
     # Create output directory if it doesn't exist
     output_dir = os.path.dirname(output_path)
@@ -85,16 +90,15 @@ def output_data(tracks, output_path='output_videos/data_output.json'):
                     data['distance_m']
                 ])
         
-        # Add summary rows
+        # Add summary rows - only possession counts
         writer.writerow([])
         writer.writerow(['Summary', '', '', ''])
-        for team_key in sorted(output_dict.keys()):
-            if team_key == 'summary':
-                continue
-            summary_key = f'{team_key}_total_distance_km'
-            if summary_key in output_dict['summary']:
-                team_label = team_key.replace('_', ' ').title()
-                writer.writerow([f'{team_label} Total', '', output_dict['summary'][summary_key], ''])
+        
+        # Write possession counts
+        if 'team_1_possession_count' in output_dict['summary']:
+            writer.writerow(['Team 1 Possession', '', output_dict['summary']['team_1_possession_count'], ''])
+        if 'team_2_possession_count' in output_dict['summary']:
+            writer.writerow(['Team 2 Possession', '', output_dict['summary']['team_2_possession_count'], ''])
     
     print(f"Data output saved to {output_path} and {csv_path}")
     
