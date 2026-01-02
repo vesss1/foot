@@ -17,9 +17,9 @@
 #include <QTableWidget>
 #include <QTabWidget>
 #include <QHeaderView>
-#include <QMediaPlayer>
-#include <QVideoWidget>
-#include <QAudioOutput>
+#include <QtMultimedia/QMediaPlayer>
+#include <QtMultimediaWidgets/QVideoWidget>
+#include <QtMultimedia/QAudioOutput>
 
 class MainWindow : public QMainWindow
 {
