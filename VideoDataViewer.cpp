@@ -146,7 +146,7 @@ void VideoDataViewer::setupUI()
     // Connect signals
     connect(playPauseButton, &QPushButton::clicked, this, &VideoDataViewer::onPlayPauseClicked);
     connect(resetButton, &QPushButton::clicked, this, &VideoDataViewer::onResetClicked);
-    connect(dataDisplayCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+    connect(dataDisplayCombo, qOverload<int>(&QComboBox::currentIndexChanged),
             this, &VideoDataViewer::onDataDisplayModeChanged);
 }
 
@@ -240,7 +240,7 @@ void VideoDataViewer::loadCSVData(const QString &filePath)
     file.close();
     
     // Parse CSV
-    QStringList lines = dataContent.split('\n', Qt::SkipEmptyParts);
+    QStringList lines = dataContent.split('\n', Qt::SplitBehaviorFlags::SkipEmptyParts);
     
     if (lines.isEmpty()) {
         return;
@@ -310,8 +310,12 @@ void VideoDataViewer::loadJSONData(const QString &filePath)
                             row.append(QString::number(val.toDouble()));
                         } else if (val.isBool()) {
                             row.append(val.toBool() ? "true" : "false");
-                        } else {
+                        } else if (val.isArray()) {
+                            row.append(QJsonDocument(val.toArray()).toJson(QJsonDocument::Compact));
+                        } else if (val.isObject()) {
                             row.append(QJsonDocument(val.toObject()).toJson(QJsonDocument::Compact));
+                        } else {
+                            row.append("null");
                         }
                     }
                     dataRows.append(row);
@@ -335,8 +339,10 @@ void VideoDataViewer::loadJSONData(const QString &filePath)
                 row.append(QString::number(val.toDouble()));
             } else if (val.isBool()) {
                 row.append(val.toBool() ? "true" : "false");
-            } else if (val.isArray() || val.isObject()) {
+            } else if (val.isArray()) {
                 row.append(QJsonDocument(val.toArray()).toJson(QJsonDocument::Compact));
+            } else if (val.isObject()) {
+                row.append(QJsonDocument(val.toObject()).toJson(QJsonDocument::Compact));
             } else {
                 row.append("null");
             }

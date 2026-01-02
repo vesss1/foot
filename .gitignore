@@ -23,3 +23,11 @@ qrc_*.cpp
 *.dylib
 *.a
 *.lib
+Makefile
+.qmake.stash
+
+# Build directories
+debug/
+release/
+VideoDataViewer
+FootAnalysisGUI

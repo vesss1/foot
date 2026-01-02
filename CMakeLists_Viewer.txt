@@ -1,0 +1,50 @@
+cmake_minimum_required(VERSION 3.16)
+project(VideoDataViewer LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Qt6 configuration
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+set(CMAKE_AUTOUIC ON)
+
+# Find Qt6
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets)
+
+# Find OpenCV
+find_package(OpenCV REQUIRED)
+
+# Include directories
+include_directories(${OpenCV_INCLUDE_DIRS})
+
+# Source files
+set(SOURCES
+    viewer_main.cpp
+    VideoDataViewer.cpp
+)
+
+set(HEADERS
+    VideoDataViewer.h
+)
+
+# Create executable
+add_executable(VideoDataViewer ${SOURCES} ${HEADERS})
+
+# Link libraries
+target_link_libraries(VideoDataViewer
+    Qt6::Core
+    Qt6::Gui
+    Qt6::Widgets
+    ${OpenCV_LIBS}
+)
+
+# Installation rules
+install(TARGETS VideoDataViewer
+    RUNTIME DESTINATION bin
+)
+
+# Display configuration info
+message(STATUS "Qt6 version: ${Qt6_VERSION}")
+message(STATUS "OpenCV version: ${OpenCV_VERSION}")
+message(STATUS "OpenCV libraries: ${OpenCV_LIBS}")
