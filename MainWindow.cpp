@@ -40,6 +40,11 @@ MainWindow::MainWindow(QWidget *parent)
 {
     setupUI();
     setWindowTitle("Foot Analysis GUI");
+    
+    // Set reasonable minimum size for window
+    setMinimumSize(900, 700);  // Minimum: 900x700 for usability
+    
+    // Set default size
     resize(1200, 900);
 }
 
@@ -66,8 +71,18 @@ void MainWindow::setupUI()
     centralWidget = new QWidget(this);
     setCentralWidget(centralWidget);
     
+    // Create a scroll area for the entire content
+    QScrollArea *mainScrollArea = new QScrollArea(this);
+    mainScrollArea->setWidgetResizable(true);
+    mainScrollArea->setFrameShape(QFrame::NoFrame);
+    setCentralWidget(mainScrollArea);
+    
+    // Content widget inside scroll area
+    QWidget *contentWidget = new QWidget();
+    mainScrollArea->setWidget(contentWidget);
+    
     // Main grid layout: 2 columns
-    QGridLayout *mainGrid = new QGridLayout(centralWidget);
+    QGridLayout *mainGrid = new QGridLayout(contentWidget);
     mainGrid->setSpacing(12);
     mainGrid->setContentsMargins(16, 16, 16, 16);
     mainGrid->setColumnStretch(0, 1);  // Left column
@@ -79,6 +94,7 @@ void MainWindow::setupUI()
     
     // Input Configuration Group (Left)
     QGroupBox *inputGroup = new QGroupBox("Input Configuration", this);
+    inputGroup->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     QFormLayout *inputFormLayout = new QFormLayout(inputGroup);
     inputFormLayout->setSpacing(12);
     inputFormLayout->setContentsMargins(16, 16, 16, 16);
@@ -90,8 +106,10 @@ void MainWindow::setupUI()
     videoRowLayout->setSpacing(8);
     inputVideoPathEdit = new QLineEdit(this);
     inputVideoPathEdit->setPlaceholderText("Select input video file...");
+    inputVideoPathEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     browseInputButton = new QPushButton("Browse...", this);
     browseInputButton->setMinimumWidth(90);
+    browseInputButton->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     videoRowLayout->addWidget(inputVideoPathEdit, 1);
     videoRowLayout->addWidget(browseInputButton, 0);
     inputFormLayout->addRow("Video File:", videoRowLayout);
@@ -101,8 +119,10 @@ void MainWindow::setupUI()
     modelRowLayout->setSpacing(8);
     modelPathEdit = new QLineEdit(this);
     modelPathEdit->setPlaceholderText("Select YOLO model file...");
+    modelPathEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     browseModelButton = new QPushButton("Browse...", this);
     browseModelButton->setMinimumWidth(90);
+    browseModelButton->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     modelRowLayout->addWidget(modelPathEdit, 1);
     modelRowLayout->addWidget(browseModelButton, 0);
     inputFormLayout->addRow("YOLO Model:", modelRowLayout);
@@ -111,12 +131,14 @@ void MainWindow::setupUI()
     
     // Analysis Control Group (Right)
     QGroupBox *controlGroup = new QGroupBox("Analysis Control", this);
+    controlGroup->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     QVBoxLayout *controlLayout = new QVBoxLayout(controlGroup);
     controlLayout->setSpacing(12);
     controlLayout->setContentsMargins(16, 16, 16, 16);
     
     startButton = new QPushButton("Start Analysis", this);
     startButton->setMinimumHeight(40);
+    startButton->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     controlLayout->addWidget(startButton);
     
     mainGrid->addWidget(controlGroup, currentRow, 1);
@@ -131,12 +153,14 @@ void MainWindow::setupUI()
     
     // Output Log Section (Full Width) - Restructured with Summary/Details/Actions
     QWidget *logContainer = new QWidget(this);
+    logContainer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     QVBoxLayout *logContainerLayout = new QVBoxLayout(logContainer);
     logContainerLayout->setSpacing(12);
     logContainerLayout->setContentsMargins(0, 0, 0, 0);
     
     // Summary Section - Fixed height (3-5 lines)
     QGroupBox *summaryGroup = new QGroupBox("Summary", this);
+    summaryGroup->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     QVBoxLayout *summaryGroupLayout = new QVBoxLayout(summaryGroup);
     summaryGroupLayout->setSpacing(8);
     summaryGroupLayout->setContentsMargins(16, 16, 16, 16);
@@ -145,24 +169,29 @@ void MainWindow::setupUI()
     statusLabel->setStyleSheet("QLabel { padding: 8px; background-color: #f0f0f0; border-radius: 3px; }");
     statusLabel->setWordWrap(true);
     statusLabel->setMaximumHeight(80);  // Fixed height for 3-5 lines
+    statusLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     summaryGroupLayout->addWidget(statusLabel);
     
     logContainerLayout->addWidget(summaryGroup);
     
     // Details Section - Scrollable log area
     QGroupBox *detailsGroup = new QGroupBox("Details", this);
+    detailsGroup->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     QVBoxLayout *detailsGroupLayout = new QVBoxLayout(detailsGroup);
     detailsGroupLayout->setSpacing(0);
     detailsGroupLayout->setContentsMargins(16, 16, 16, 16);
     
     outputTextEdit = new QTextEdit(this);
     outputTextEdit->setReadOnly(true);
+    outputTextEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    outputTextEdit->setMinimumHeight(100);  // Reasonable minimum
     detailsGroupLayout->addWidget(outputTextEdit);
     
     logContainerLayout->addWidget(detailsGroup);
     
     // Actions Section - Buttons right-aligned at bottom
     QGroupBox *actionsGroup = new QGroupBox("Actions", this);
+    actionsGroup->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     QVBoxLayout *actionsGroupLayout = new QVBoxLayout(actionsGroup);
     actionsGroupLayout->setSpacing(8);
     actionsGroupLayout->setContentsMargins(16, 16, 16, 16);
@@ -173,6 +202,7 @@ void MainWindow::setupUI()
     
     QPushButton *clearLogButton = new QPushButton("Clear Log", this);
     clearLogButton->setMinimumWidth(90);
+    clearLogButton->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     actionsButtonLayout->addWidget(clearLogButton);
     
     actionsGroupLayout->addLayout(actionsButtonLayout);
@@ -194,26 +224,31 @@ void MainWindow::setupUI()
     
     // Results Section with Tabs (Full Width)
     resultsGroupBox = new QGroupBox("Analysis Results", this);
+    resultsGroupBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     QVBoxLayout *resultsLayout = new QVBoxLayout(resultsGroupBox);
     resultsLayout->setSpacing(0);
     resultsLayout->setContentsMargins(16, 16, 16, 16);
     
     resultsTabWidget = new QTabWidget(this);
+    resultsTabWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     
     // Tab 1: Summary/Image View
     QWidget *summaryTab = new QWidget();
+    summaryTab->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     QVBoxLayout *summaryLayout = new QVBoxLayout(summaryTab);
     summaryLayout->setContentsMargins(5, 5, 5, 5);
     summaryLayout->setSpacing(0);
     
     resultScrollArea = new QScrollArea(this);
     resultScrollArea->setWidgetResizable(true);
+    resultScrollArea->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     
     resultImageLabel = new QLabel(this);
     resultImageLabel->setAlignment(Qt::AlignCenter);
     resultImageLabel->setScaledContents(false);
     resultImageLabel->setText("Results will appear here after analysis completes.");
     resultImageLabel->setStyleSheet("QLabel { background-color: #e0e0e0; padding: 20px; }");
+    resultImageLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     
     resultScrollArea->setWidget(resultImageLabel);
     summaryLayout->addWidget(resultScrollArea);
@@ -221,12 +256,14 @@ void MainWindow::setupUI()
     
     // Tab 2: Data Table (CSV/JSON)
     dataTab = new QWidget();
+    dataTab->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     QVBoxLayout *dataLayout = new QVBoxLayout(dataTab);
     dataLayout->setContentsMargins(5, 5, 5, 5);
     dataLayout->setSpacing(8);
     
     QLabel *dataLabel = new QLabel("Player Statistics and Team Possession", this);
     dataLabel->setStyleSheet("QLabel { font-weight: bold; padding: 5px; }");
+    dataLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     dataLayout->addWidget(dataLabel);
     
     dataTableWidget = new QTableWidget(this);
@@ -234,18 +271,22 @@ void MainWindow::setupUI()
     dataTableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
     dataTableWidget->horizontalHeader()->setStretchLastSection(true);
     dataTableWidget->setAlternatingRowColors(true);
+    dataTableWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     dataLayout->addWidget(dataTableWidget);
     
     resultsTabWidget->addTab(dataTab, "Data Table");
     
     // Tab 3: Video Player
     videoTab = new QWidget();
+    videoTab->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     QVBoxLayout *videoLayout = new QVBoxLayout(videoTab);
     videoLayout->setContentsMargins(5, 5, 5, 5);
     videoLayout->setSpacing(8);
     
     videoWidget = new QVideoWidget(this);
     videoWidget->setStyleSheet("background-color: black;");
+    videoWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    videoWidget->setMinimumHeight(200);  // Reasonable minimum for video playback
     videoLayout->addWidget(videoWidget, 1);
     
     // Video controls
@@ -254,9 +295,11 @@ void MainWindow::setupUI()
     playPauseButton = new QPushButton("Play", this);
     playPauseButton->setEnabled(false);
     playPauseButton->setMinimumWidth(90);
+    playPauseButton->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     stopButton = new QPushButton("Stop", this);
     stopButton->setEnabled(false);
     stopButton->setMinimumWidth(90);
+    stopButton->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     
     controlsLayout->addWidget(playPauseButton);
     controlsLayout->addWidget(stopButton);
