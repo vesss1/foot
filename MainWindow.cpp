@@ -67,59 +67,82 @@ void MainWindow::setupUI()
     setCentralWidget(centralWidget);
     
     mainLayout = new QVBoxLayout(centralWidget);
+    mainLayout->setSpacing(10);
+    mainLayout->setContentsMargins(10, 10, 10, 10);
     
-    // Input Video Section
-    QGroupBox *inputVideoGroup = new QGroupBox("Input Video", this);
-    QHBoxLayout *inputVideoLayout = new QHBoxLayout(inputVideoGroup);
+    // Input Section - Combined Group with Form Layout
+    QGroupBox *inputGroup = new QGroupBox("Input Configuration", this);
+    QFormLayout *inputFormLayout = new QFormLayout(inputGroup);
+    inputFormLayout->setSpacing(8);
+    inputFormLayout->setContentsMargins(10, 15, 10, 10);
+    
+    // Input Video Row
+    QHBoxLayout *videoRowLayout = new QHBoxLayout();
+    videoRowLayout->setSpacing(8);
     inputVideoPathEdit = new QLineEdit(this);
     inputVideoPathEdit->setPlaceholderText("Select input video file...");
     browseInputButton = new QPushButton("Browse...", this);
-    inputVideoLayout->addWidget(inputVideoPathEdit);
-    inputVideoLayout->addWidget(browseInputButton);
-    mainLayout->addWidget(inputVideoGroup);
+    browseInputButton->setMinimumWidth(90);
+    videoRowLayout->addWidget(inputVideoPathEdit, 1);
+    videoRowLayout->addWidget(browseInputButton, 0);
+    inputFormLayout->addRow("Video File:", videoRowLayout);
     
-    // Model Section
-    QGroupBox *modelGroup = new QGroupBox("YOLO Model", this);
-    QHBoxLayout *modelLayout = new QHBoxLayout(modelGroup);
+    // Model Row
+    QHBoxLayout *modelRowLayout = new QHBoxLayout();
+    modelRowLayout->setSpacing(8);
     modelPathEdit = new QLineEdit(this);
     modelPathEdit->setPlaceholderText("Select YOLO model file...");
     browseModelButton = new QPushButton("Browse...", this);
-    modelLayout->addWidget(modelPathEdit);
-    modelLayout->addWidget(browseModelButton);
-    mainLayout->addWidget(modelGroup);
+    browseModelButton->setMinimumWidth(90);
+    modelRowLayout->addWidget(modelPathEdit, 1);
+    modelRowLayout->addWidget(browseModelButton, 0);
+    inputFormLayout->addRow("YOLO Model:", modelRowLayout);
     
-    // Start Button
+    mainLayout->addWidget(inputGroup, 0);
+    
+    // Control Section - Start Button and Status
+    QGroupBox *controlGroup = new QGroupBox("Analysis Control", this);
+    QVBoxLayout *controlLayout = new QVBoxLayout(controlGroup);
+    controlLayout->setSpacing(8);
+    controlLayout->setContentsMargins(10, 15, 10, 10);
+    
     startButton = new QPushButton("Start Analysis", this);
     startButton->setMinimumHeight(40);
-    mainLayout->addWidget(startButton);
+    controlLayout->addWidget(startButton);
     
-    // Status Label
     statusLabel = new QLabel("Ready", this);
-    statusLabel->setStyleSheet("QLabel { padding: 5px; background-color: #f0f0f0; }");
-    mainLayout->addWidget(statusLabel);
+    statusLabel->setStyleSheet("QLabel { padding: 8px; background-color: #f0f0f0; border-radius: 3px; }");
+    controlLayout->addWidget(statusLabel);
+    
+    mainLayout->addWidget(controlGroup, 0);
     
     // Output Log Section
     QGroupBox *outputGroup = new QGroupBox("Analysis Log", this);
     QVBoxLayout *outputLayout = new QVBoxLayout(outputGroup);
+    outputLayout->setSpacing(0);
+    outputLayout->setContentsMargins(10, 15, 10, 10);
     outputTextEdit = new QTextEdit(this);
     outputTextEdit->setReadOnly(true);
-    outputTextEdit->setMinimumHeight(150);
     outputLayout->addWidget(outputTextEdit);
-    mainLayout->addWidget(outputGroup);
+    mainLayout->addWidget(outputGroup, 1);
     
     // Results Section with Tabs
     resultsGroupBox = new QGroupBox("Analysis Results", this);
     QVBoxLayout *resultsLayout = new QVBoxLayout(resultsGroupBox);
+    resultsLayout->setSpacing(0);
+    resultsLayout->setContentsMargins(10, 15, 10, 10);
     
     resultsTabWidget = new QTabWidget(this);
+    resultsTabWidget->setDocumentMode(false);
     
     // Tab 1: Summary/Image View
     QWidget *summaryTab = new QWidget();
     QVBoxLayout *summaryLayout = new QVBoxLayout(summaryTab);
+    summaryLayout->setContentsMargins(5, 5, 5, 5);
+    summaryLayout->setSpacing(0);
     
     resultScrollArea = new QScrollArea(this);
     resultScrollArea->setWidgetResizable(true);
-    resultScrollArea->setMinimumHeight(200);
     
     resultImageLabel = new QLabel(this);
     resultImageLabel->setAlignment(Qt::AlignCenter);
@@ -134,6 +157,8 @@ void MainWindow::setupUI()
     // Tab 2: Data Table (CSV/JSON)
     dataTab = new QWidget();
     QVBoxLayout *dataLayout = new QVBoxLayout(dataTab);
+    dataLayout->setContentsMargins(5, 5, 5, 5);
+    dataLayout->setSpacing(8);
     
     QLabel *dataLabel = new QLabel("Player Statistics and Team Possession", this);
     dataLabel->setStyleSheet("QLabel { font-weight: bold; padding: 5px; }");
@@ -151,29 +176,33 @@ void MainWindow::setupUI()
     // Tab 3: Video Player
     videoTab = new QWidget();
     QVBoxLayout *videoLayout = new QVBoxLayout(videoTab);
+    videoLayout->setContentsMargins(5, 5, 5, 5);
+    videoLayout->setSpacing(8);
     
     videoWidget = new QVideoWidget(this);
-    videoWidget->setMinimumHeight(300);
     videoWidget->setStyleSheet("background-color: black;");
-    videoLayout->addWidget(videoWidget);
+    videoLayout->addWidget(videoWidget, 1);
     
     // Video controls
     QHBoxLayout *controlsLayout = new QHBoxLayout();
+    controlsLayout->setSpacing(8);
     playPauseButton = new QPushButton("Play", this);
     playPauseButton->setEnabled(false);
+    playPauseButton->setMinimumWidth(90);
     stopButton = new QPushButton("Stop", this);
     stopButton->setEnabled(false);
+    stopButton->setMinimumWidth(90);
     
     controlsLayout->addWidget(playPauseButton);
     controlsLayout->addWidget(stopButton);
     controlsLayout->addStretch();
     
-    videoLayout->addLayout(controlsLayout);
+    videoLayout->addLayout(controlsLayout, 0);
     
     resultsTabWidget->addTab(videoTab, "Video Output");
     
     resultsLayout->addWidget(resultsTabWidget);
-    mainLayout->addWidget(resultsGroupBox);
+    mainLayout->addWidget(resultsGroupBox, 2);
     
     // Initialize media player
     mediaPlayer = new QMediaPlayer(this);
