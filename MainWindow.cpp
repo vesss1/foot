@@ -83,7 +83,7 @@ void MainWindow::setupUI()
     
     // Main grid layout: 2 columns
     QGridLayout *mainGrid = new QGridLayout(contentWidget);
-    mainGrid->setSpacing(12);
+    mainGrid->setSpacing(20);  // Block spacing: 20px for visual rhythm
     mainGrid->setContentsMargins(16, 16, 16, 16);
     mainGrid->setColumnStretch(0, 1);  // Left column
     mainGrid->setColumnStretch(1, 1);  // Right column
@@ -95,13 +95,16 @@ void MainWindow::setupUI()
     // Input Configuration Group (Left)
     QGroupBox *inputGroup = new QGroupBox("Input Configuration", this);
     inputGroup->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    // GroupBox title styling: 11pt, bold
+    inputGroup->setStyleSheet("QGroupBox { font-size: 11pt; font-weight: bold; }");
+    
     QFormLayout *inputFormLayout = new QFormLayout(inputGroup);
-    inputFormLayout->setSpacing(12);
+    inputFormLayout->setSpacing(10);  // Field spacing: 10px for consistency
     inputFormLayout->setContentsMargins(16, 16, 16, 16);
     inputFormLayout->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
     inputFormLayout->setFieldGrowthPolicy(QFormLayout::ExpandingFieldsGrow);
     
-    // Video File Row
+    // Video File Row (Required field)
     QHBoxLayout *videoRowLayout = new QHBoxLayout();
     videoRowLayout->setSpacing(8);
     inputVideoPathEdit = new QLineEdit(this);
@@ -112,9 +115,13 @@ void MainWindow::setupUI()
     browseInputButton->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     videoRowLayout->addWidget(inputVideoPathEdit, 1);
     videoRowLayout->addWidget(browseInputButton, 0);
-    inputFormLayout->addRow("Video File:", videoRowLayout);
     
-    // YOLO Model Row
+    // Create label with required marker
+    QLabel *videoLabel = new QLabel("Video File: <span style='color: red;'>*</span>", this);
+    videoLabel->setStyleSheet("font-size: 10pt;");  // Field label: 10pt
+    inputFormLayout->addRow(videoLabel, videoRowLayout);
+    
+    // YOLO Model Row (Required field)
     QHBoxLayout *modelRowLayout = new QHBoxLayout();
     modelRowLayout->setSpacing(8);
     modelPathEdit = new QLineEdit(this);
@@ -125,15 +132,22 @@ void MainWindow::setupUI()
     browseModelButton->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     modelRowLayout->addWidget(modelPathEdit, 1);
     modelRowLayout->addWidget(browseModelButton, 0);
-    inputFormLayout->addRow("YOLO Model:", modelRowLayout);
+    
+    // Create label with required marker
+    QLabel *modelLabel = new QLabel("YOLO Model: <span style='color: red;'>*</span>", this);
+    modelLabel->setStyleSheet("font-size: 10pt;");  // Field label: 10pt
+    inputFormLayout->addRow(modelLabel, modelRowLayout);
     
     mainGrid->addWidget(inputGroup, currentRow, 0);
     
     // Analysis Control Group (Right)
     QGroupBox *controlGroup = new QGroupBox("Analysis Control", this);
     controlGroup->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    // GroupBox title styling: 11pt, bold
+    controlGroup->setStyleSheet("QGroupBox { font-size: 11pt; font-weight: bold; }");
+    
     QVBoxLayout *controlLayout = new QVBoxLayout(controlGroup);
-    controlLayout->setSpacing(12);
+    controlLayout->setSpacing(10);  // Field spacing: 10px for consistency
     controlLayout->setContentsMargins(16, 16, 16, 16);
     
     startButton = new QPushButton("Start Analysis", this);
@@ -145,8 +159,7 @@ void MainWindow::setupUI()
     
     currentRow++;
     
-    // Add spacing between sections
-    mainGrid->setRowMinimumHeight(currentRow, 20);
+    // Add spacing between sections (removed setRowMinimumHeight, using mainGrid spacing instead)
     currentRow++;
     
     // ===== FULL WIDTH SECTIONS =====
@@ -155,18 +168,21 @@ void MainWindow::setupUI()
     QWidget *logContainer = new QWidget(this);
     logContainer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     QVBoxLayout *logContainerLayout = new QVBoxLayout(logContainer);
-    logContainerLayout->setSpacing(12);
+    logContainerLayout->setSpacing(10);  // Spacing between log subsections: 10px
     logContainerLayout->setContentsMargins(0, 0, 0, 0);
     
     // Summary Section - Fixed height (3-5 lines)
     QGroupBox *summaryGroup = new QGroupBox("Summary", this);
     summaryGroup->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    // GroupBox title styling: 11pt, bold
+    summaryGroup->setStyleSheet("QGroupBox { font-size: 11pt; font-weight: bold; }");
+    
     QVBoxLayout *summaryGroupLayout = new QVBoxLayout(summaryGroup);
     summaryGroupLayout->setSpacing(8);
     summaryGroupLayout->setContentsMargins(16, 16, 16, 16);
     
     statusLabel = new QLabel("Ready", this);
-    statusLabel->setStyleSheet("QLabel { padding: 8px; background-color: #f0f0f0; border-radius: 3px; }");
+    statusLabel->setStyleSheet("QLabel { padding: 8px; background-color: #f0f0f0; border-radius: 3px; font-size: 10pt; }");
     statusLabel->setWordWrap(true);
     statusLabel->setMaximumHeight(80);  // Fixed height for 3-5 lines
     statusLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
@@ -177,6 +193,9 @@ void MainWindow::setupUI()
     // Details Section - Scrollable log area
     QGroupBox *detailsGroup = new QGroupBox("Details", this);
     detailsGroup->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    // GroupBox title styling: 11pt, bold
+    detailsGroup->setStyleSheet("QGroupBox { font-size: 11pt; font-weight: bold; }");
+    
     QVBoxLayout *detailsGroupLayout = new QVBoxLayout(detailsGroup);
     detailsGroupLayout->setSpacing(0);
     detailsGroupLayout->setContentsMargins(16, 16, 16, 16);
@@ -185,6 +204,7 @@ void MainWindow::setupUI()
     outputTextEdit->setReadOnly(true);
     outputTextEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     outputTextEdit->setMinimumHeight(100);  // Reasonable minimum
+    outputTextEdit->setStyleSheet("font-size: 9pt;");  // Content text: 9pt
     detailsGroupLayout->addWidget(outputTextEdit);
     
     logContainerLayout->addWidget(detailsGroup);
@@ -192,6 +212,9 @@ void MainWindow::setupUI()
     // Actions Section - Buttons right-aligned at bottom
     QGroupBox *actionsGroup = new QGroupBox("Actions", this);
     actionsGroup->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    // GroupBox title styling: 11pt, bold
+    actionsGroup->setStyleSheet("QGroupBox { font-size: 11pt; font-weight: bold; }");
+    
     QVBoxLayout *actionsGroupLayout = new QVBoxLayout(actionsGroup);
     actionsGroupLayout->setSpacing(8);
     actionsGroupLayout->setContentsMargins(16, 16, 16, 16);
@@ -218,13 +241,15 @@ void MainWindow::setupUI()
     
     currentRow++;
     
-    // Add spacing between sections
-    mainGrid->setRowMinimumHeight(currentRow, 20);
+    // Add spacing between sections (removed setRowMinimumHeight, using mainGrid spacing instead)
     currentRow++;
     
     // Results Section with Tabs (Full Width)
     resultsGroupBox = new QGroupBox("Analysis Results", this);
     resultsGroupBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    // GroupBox title styling: 11pt, bold
+    resultsGroupBox->setStyleSheet("QGroupBox { font-size: 11pt; font-weight: bold; }");
+    
     QVBoxLayout *resultsLayout = new QVBoxLayout(resultsGroupBox);
     resultsLayout->setSpacing(0);
     resultsLayout->setContentsMargins(16, 16, 16, 16);
