@@ -14,6 +14,12 @@
 #include <QScrollArea>
 #include <QPixmap>
 #include <QGroupBox>
+#include <QTableWidget>
+#include <QTabWidget>
+#include <QHeaderView>
+#include <QtMultimedia/QMediaPlayer>
+#include <QtMultimediaWidgets/QVideoWidget>
+#include <QtMultimedia/QAudioOutput>
 
 class MainWindow : public QMainWindow
 {
@@ -30,11 +36,16 @@ private slots:
     void onProcessReadyReadStandardOutput();
     void onProcessReadyReadStandardError();
     void onProcessFinished(int exitCode, QProcess::ExitStatus exitStatus);
+    void onPlayPauseVideo();
+    void onStopVideo();
 
 private:
     void setupUI();
     void displayResultMedia(const QString &mediaPath);
     QString findOutputVideo();
+    void loadAndDisplayCSV(const QString &csvPath);
+    void loadAndDisplayJSON(const QString &jsonPath);
+    void loadAndPlayVideo(const QString &videoPath);
     
     // UI Components
     QWidget *centralWidget;
@@ -52,9 +63,22 @@ private:
     QLabel *statusLabel;
     
     // Results display
+    QTabWidget *resultsTabWidget;
     QLabel *resultImageLabel;
     QScrollArea *resultScrollArea;
     QGroupBox *resultsGroupBox;
+    
+    // Data display (CSV/JSON)
+    QTableWidget *dataTableWidget;
+    QWidget *dataTab;
+    
+    // Video playback
+    QMediaPlayer *mediaPlayer;
+    QAudioOutput *audioOutput;
+    QVideoWidget *videoWidget;
+    QPushButton *playPauseButton;
+    QPushButton *stopButton;
+    QWidget *videoTab;
     
     // Process
     QProcess *pythonProcess;
