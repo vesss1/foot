@@ -22,6 +22,9 @@
 #include <QtMultimedia/QMediaPlayer>
 #include <QtMultimediaWidgets/QVideoWidget>
 #include <QtMultimedia/QAudioOutput>
+#include <QSplitter>
+#include <QStatusBar>
+#include <QToolButton>
 
 class MainWindow : public QMainWindow
 {
@@ -55,9 +58,9 @@ private:
     
     // Input controls
     QLineEdit *inputVideoPathEdit;
-    QPushButton *browseInputButton;
+    QToolButton *browseInputButton;
     QLineEdit *modelPathEdit;
-    QPushButton *browseModelButton;
+    QToolButton *browseModelButton;
     QPushButton *startButton;
     
     // Output display
@@ -68,7 +71,6 @@ private:
     QTabWidget *resultsTabWidget;
     QLabel *resultImageLabel;
     QScrollArea *resultScrollArea;
-    QGroupBox *resultsGroupBox;
     
     // Data display (CSV/JSON)
     QTableWidget *dataTableWidget;
