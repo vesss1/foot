@@ -1,4 +1,5 @@
 #include "MainWindow.h"
+#include <QCoreApplication>
 #include <QDir>
 #include <QFileInfo>
 #include <QImageReader>
@@ -185,7 +186,7 @@ void MainWindow::onStartAnalysis()
     }
     
     // Setup Python command
-    QString pythonScript = QDir::currentPath() + "/foot-Function/main.py";
+    QString pythonScript = QCoreApplication::applicationDirPath() + "/../foot-Function/main.py";
     
     if (!QFileInfo::exists(pythonScript)) {
         QMessageBox::critical(this, "Script Not Found", 
@@ -199,7 +200,7 @@ void MainWindow::onStartAnalysis()
     arguments << "--model" << modelPath;
     
     // Start the process
-    pythonProcess->setWorkingDirectory(QDir::currentPath() + "/foot-Function");
+    pythonProcess->setWorkingDirectory(QCoreApplication::applicationDirPath() + "/../foot-Function");
     pythonProcess->start("python", arguments);
     
     if (!pythonProcess->waitForStarted(3000)) {
@@ -278,7 +279,7 @@ void MainWindow::onProcessFinished(int exitCode, QProcess::ExitStatus exitStatus
 QString MainWindow::findOutputVideo()
 {
     // Look for output in the foot-Function/output_videos directory
-    QDir outputDir(QDir::currentPath() + "/foot-Function/output_videos");
+    QDir outputDir(QCoreApplication::applicationDirPath() + "/../foot-Function/output_videos");
     
     if (!outputDir.exists()) {
         qDebug() << "Output directory does not exist:" << outputDir.path();
