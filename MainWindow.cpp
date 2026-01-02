@@ -133,7 +133,6 @@ void MainWindow::setupUI()
     resultsLayout->setContentsMargins(10, 15, 10, 10);
     
     resultsTabWidget = new QTabWidget(this);
-    resultsTabWidget->setDocumentMode(false);
     
     // Tab 1: Summary/Image View
     QWidget *summaryTab = new QWidget();
