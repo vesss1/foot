@@ -23,6 +23,7 @@ MainWindow::MainWindow(QWidget *parent)
     , startButton(nullptr)
     , outputTextEdit(nullptr)
     , statusLabel(nullptr)
+    , versionLabel(nullptr)
     , resultsTabWidget(nullptr)
     , resultImageLabel(nullptr)
     , resultScrollArea(nullptr)
@@ -39,7 +40,7 @@ MainWindow::MainWindow(QWidget *parent)
     , analysisRunning(false)
 {
     setupUI();
-    setWindowTitle("Foot Analysis GUI");
+    setWindowTitle(QString("Foot Analysis GUI v%1").arg(APP_VERSION));
     resize(1200, 900);
 }
 
@@ -174,6 +175,12 @@ void MainWindow::setupUI()
     
     resultsLayout->addWidget(resultsTabWidget);
     mainLayout->addWidget(resultsGroupBox);
+    
+    // Version label at the bottom
+    versionLabel = new QLabel(QString("Version %1").arg(APP_VERSION), this);
+    versionLabel->setStyleSheet("QLabel { padding: 5px; color: #666; font-size: 10pt; }");
+    versionLabel->setAlignment(Qt::AlignRight);
+    mainLayout->addWidget(versionLabel);
     
     // Initialize media player
     mediaPlayer = new QMediaPlayer(this);
