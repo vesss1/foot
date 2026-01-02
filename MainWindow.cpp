@@ -66,17 +66,26 @@ void MainWindow::setupUI()
     centralWidget = new QWidget(this);
     setCentralWidget(centralWidget);
     
-    mainLayout = new QVBoxLayout(centralWidget);
-    mainLayout->setSpacing(10);
-    mainLayout->setContentsMargins(10, 10, 10, 10);
+    // Main grid layout: 2 columns
+    QGridLayout *mainGrid = new QGridLayout(centralWidget);
+    mainGrid->setSpacing(12);
+    mainGrid->setContentsMargins(16, 16, 16, 16);
+    mainGrid->setColumnStretch(0, 1);  // Left column
+    mainGrid->setColumnStretch(1, 1);  // Right column
     
-    // Input Section - Combined Group with Form Layout
+    int currentRow = 0;
+    
+    // ===== LEFT COLUMN =====
+    
+    // Input Configuration Group (Left)
     QGroupBox *inputGroup = new QGroupBox("Input Configuration", this);
     QFormLayout *inputFormLayout = new QFormLayout(inputGroup);
-    inputFormLayout->setSpacing(8);
-    inputFormLayout->setContentsMargins(10, 15, 10, 10);
+    inputFormLayout->setSpacing(12);
+    inputFormLayout->setContentsMargins(16, 16, 16, 16);
+    inputFormLayout->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    inputFormLayout->setFieldGrowthPolicy(QFormLayout::ExpandingFieldsGrow);
     
-    // Input Video Row
+    // Video File Row
     QHBoxLayout *videoRowLayout = new QHBoxLayout();
     videoRowLayout->setSpacing(8);
     inputVideoPathEdit = new QLineEdit(this);
@@ -87,7 +96,7 @@ void MainWindow::setupUI()
     videoRowLayout->addWidget(browseInputButton, 0);
     inputFormLayout->addRow("Video File:", videoRowLayout);
     
-    // Model Row
+    // YOLO Model Row
     QHBoxLayout *modelRowLayout = new QHBoxLayout();
     modelRowLayout->setSpacing(8);
     modelPathEdit = new QLineEdit(this);
@@ -98,13 +107,13 @@ void MainWindow::setupUI()
     modelRowLayout->addWidget(browseModelButton, 0);
     inputFormLayout->addRow("YOLO Model:", modelRowLayout);
     
-    mainLayout->addWidget(inputGroup, 0);
+    mainGrid->addWidget(inputGroup, currentRow, 0);
     
-    // Control Section - Start Button and Status
+    // Analysis Control Group (Right)
     QGroupBox *controlGroup = new QGroupBox("Analysis Control", this);
     QVBoxLayout *controlLayout = new QVBoxLayout(controlGroup);
-    controlLayout->setSpacing(8);
-    controlLayout->setContentsMargins(10, 15, 10, 10);
+    controlLayout->setSpacing(12);
+    controlLayout->setContentsMargins(16, 16, 16, 16);
     
     startButton = new QPushButton("Start Analysis", this);
     startButton->setMinimumHeight(40);
@@ -114,23 +123,37 @@ void MainWindow::setupUI()
     statusLabel->setStyleSheet("QLabel { padding: 8px; background-color: #f0f0f0; border-radius: 3px; }");
     controlLayout->addWidget(statusLabel);
     
-    mainLayout->addWidget(controlGroup, 0);
+    mainGrid->addWidget(controlGroup, currentRow, 1);
     
-    // Output Log Section
+    currentRow++;
+    
+    // Add spacing between sections
+    mainGrid->setRowMinimumHeight(currentRow, 20);
+    currentRow++;
+    
+    // ===== FULL WIDTH SECTIONS =====
+    
+    // Output Log Section (Full Width)
     QGroupBox *outputGroup = new QGroupBox("Analysis Log", this);
     QVBoxLayout *outputLayout = new QVBoxLayout(outputGroup);
     outputLayout->setSpacing(0);
-    outputLayout->setContentsMargins(10, 15, 10, 10);
+    outputLayout->setContentsMargins(16, 16, 16, 16);
     outputTextEdit = new QTextEdit(this);
     outputTextEdit->setReadOnly(true);
     outputLayout->addWidget(outputTextEdit);
-    mainLayout->addWidget(outputGroup, 1);
+    mainGrid->addWidget(outputGroup, currentRow, 0, 1, 2);  // span 2 columns
     
-    // Results Section with Tabs
+    currentRow++;
+    
+    // Add spacing between sections
+    mainGrid->setRowMinimumHeight(currentRow, 20);
+    currentRow++;
+    
+    // Results Section with Tabs (Full Width)
     resultsGroupBox = new QGroupBox("Analysis Results", this);
     QVBoxLayout *resultsLayout = new QVBoxLayout(resultsGroupBox);
     resultsLayout->setSpacing(0);
-    resultsLayout->setContentsMargins(10, 15, 10, 10);
+    resultsLayout->setContentsMargins(16, 16, 16, 16);
     
     resultsTabWidget = new QTabWidget(this);
     
@@ -201,7 +224,12 @@ void MainWindow::setupUI()
     resultsTabWidget->addTab(videoTab, "Video Output");
     
     resultsLayout->addWidget(resultsTabWidget);
-    mainLayout->addWidget(resultsGroupBox, 2);
+    mainGrid->addWidget(resultsGroupBox, currentRow, 0, 1, 2);  // span 2 columns
+    
+    currentRow++;
+    
+    // Add spacer at the bottom to push content up
+    mainGrid->setRowStretch(currentRow, 1);
     
     // Initialize media player
     mediaPlayer = new QMediaPlayer(this);
