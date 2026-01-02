@@ -7,6 +7,7 @@ Robust, production-safe video analysis with comprehensive error handling.
 import os
 import sys
 import logging
+import argparse
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 
@@ -403,11 +404,54 @@ class VideoAnalysisPipeline:
 def main():
     """Main entry point with command-line argument support."""
     try:
-        # Configuration
-        input_video = 'input_videos/08fd33_4.mp4'
-        model_file = 'models/best.pt'
-        output_directory = 'output_videos'
-        use_cached_stubs = True
+        # Parse command-line arguments
+        parser = argparse.ArgumentParser(
+            description='Football Analysis - Video Analysis Pipeline'
+        )
+        parser.add_argument(
+            '--input',
+            type=str,
+            default='input_videos/08fd33_4.mp4',
+            help='Path to input video file'
+        )
+        parser.add_argument(
+            '--model',
+            type=str,
+            default='models/best.pt',
+            help='Path to YOLO model file'
+        )
+        parser.add_argument(
+            '--output',
+            type=str,
+            default='output_videos',
+            help='Output directory for results'
+        )
+        parser.add_argument(
+            '--no-cache',
+            action='store_true',
+            help='Disable cached stub files'
+        )
+        
+        args = parser.parse_args()
+        
+        # Get the directory where this script is located
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        
+        # Resolve paths relative to script directory if they're not absolute
+        def resolve_path(path: str) -> str:
+            """Resolve path relative to script directory if not absolute."""
+            if os.path.isabs(path):
+                return path
+            return os.path.join(script_dir, path)
+        
+        input_video = resolve_path(args.input)
+        model_file = resolve_path(args.model)
+        output_directory = resolve_path(args.output)
+        use_cached_stubs = not args.no_cache
+        
+        logger.info(f"Input video: {input_video}")
+        logger.info(f"Model file: {model_file}")
+        logger.info(f"Output directory: {output_directory}")
         
         # Create and run pipeline
         pipeline = VideoAnalysisPipeline(
