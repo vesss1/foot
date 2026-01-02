@@ -9,7 +9,14 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets Multimedia MultimediaWidgets)
+# Find Qt6 components
+find_package(Qt6 REQUIRED COMPONENTS 
+    Core
+    Gui
+    Widgets
+    Multimedia
+    MultimediaWidgets
+)
 
 add_executable(FootAnalysisGUI
     main.cpp
@@ -17,8 +24,9 @@ add_executable(FootAnalysisGUI
     MainWindow.h
 )
 
-target_link_libraries(FootAnalysisGUI
+target_link_libraries(FootAnalysisGUI PRIVATE
     Qt6::Core
+    Qt6::Gui
     Qt6::Widgets
     Qt6::Multimedia
     Qt6::MultimediaWidgets
@@ -27,4 +35,12 @@ target_link_libraries(FootAnalysisGUI
 # Set output directory
 set_target_properties(FootAnalysisGUI PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+    WIN32_EXECUTABLE TRUE
 )
+
+# For Windows, ensure proper subsystem
+if(WIN32)
+    set_target_properties(FootAnalysisGUI PROPERTIES
+        WIN32_EXECUTABLE TRUE
+    )
+endif()
