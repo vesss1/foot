@@ -119,10 +119,6 @@ void MainWindow::setupUI()
     startButton->setMinimumHeight(40);
     controlLayout->addWidget(startButton);
     
-    statusLabel = new QLabel("Ready", this);
-    statusLabel->setStyleSheet("QLabel { padding: 8px; background-color: #f0f0f0; border-radius: 3px; }");
-    controlLayout->addWidget(statusLabel);
-    
     mainGrid->addWidget(controlGroup, currentRow, 1);
     
     currentRow++;
@@ -133,15 +129,62 @@ void MainWindow::setupUI()
     
     // ===== FULL WIDTH SECTIONS =====
     
-    // Output Log Section (Full Width)
-    QGroupBox *outputGroup = new QGroupBox("Analysis Log", this);
-    QVBoxLayout *outputLayout = new QVBoxLayout(outputGroup);
-    outputLayout->setSpacing(0);
-    outputLayout->setContentsMargins(16, 16, 16, 16);
+    // Output Log Section (Full Width) - Restructured with Summary/Details/Actions
+    QWidget *logContainer = new QWidget(this);
+    QVBoxLayout *logContainerLayout = new QVBoxLayout(logContainer);
+    logContainerLayout->setSpacing(12);
+    logContainerLayout->setContentsMargins(0, 0, 0, 0);
+    
+    // Summary Section - Fixed height (3-5 lines)
+    QGroupBox *summaryGroup = new QGroupBox("Summary", this);
+    QVBoxLayout *summaryGroupLayout = new QVBoxLayout(summaryGroup);
+    summaryGroupLayout->setSpacing(8);
+    summaryGroupLayout->setContentsMargins(16, 16, 16, 16);
+    
+    statusLabel = new QLabel("Ready", this);
+    statusLabel->setStyleSheet("QLabel { padding: 8px; background-color: #f0f0f0; border-radius: 3px; }");
+    statusLabel->setWordWrap(true);
+    statusLabel->setMaximumHeight(80);  // Fixed height for 3-5 lines
+    summaryGroupLayout->addWidget(statusLabel);
+    
+    logContainerLayout->addWidget(summaryGroup);
+    
+    // Details Section - Scrollable log area
+    QGroupBox *detailsGroup = new QGroupBox("Details", this);
+    QVBoxLayout *detailsGroupLayout = new QVBoxLayout(detailsGroup);
+    detailsGroupLayout->setSpacing(0);
+    detailsGroupLayout->setContentsMargins(16, 16, 16, 16);
+    
     outputTextEdit = new QTextEdit(this);
     outputTextEdit->setReadOnly(true);
-    outputLayout->addWidget(outputTextEdit);
-    mainGrid->addWidget(outputGroup, currentRow, 0, 1, 2);  // span 2 columns
+    detailsGroupLayout->addWidget(outputTextEdit);
+    
+    logContainerLayout->addWidget(detailsGroup);
+    
+    // Actions Section - Buttons right-aligned at bottom
+    QGroupBox *actionsGroup = new QGroupBox("Actions", this);
+    QVBoxLayout *actionsGroupLayout = new QVBoxLayout(actionsGroup);
+    actionsGroupLayout->setSpacing(8);
+    actionsGroupLayout->setContentsMargins(16, 16, 16, 16);
+    
+    QHBoxLayout *actionsButtonLayout = new QHBoxLayout();
+    actionsButtonLayout->setSpacing(8);
+    actionsButtonLayout->addStretch();  // Push buttons to the right
+    
+    QPushButton *clearLogButton = new QPushButton("Clear Log", this);
+    clearLogButton->setMinimumWidth(90);
+    actionsButtonLayout->addWidget(clearLogButton);
+    
+    actionsGroupLayout->addLayout(actionsButtonLayout);
+    
+    logContainerLayout->addWidget(actionsGroup);
+    
+    mainGrid->addWidget(logContainer, currentRow, 0, 1, 2);  // span 2 columns
+    
+    // Connect clear log button
+    connect(clearLogButton, &QPushButton::clicked, [this]() {
+        outputTextEdit->clear();
+    });
     
     currentRow++;
     
