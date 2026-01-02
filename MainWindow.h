@@ -21,6 +21,9 @@
 #include <QtMultimediaWidgets/QVideoWidget>
 #include <QtMultimedia/QAudioOutput>
 
+// Application version
+#define APP_VERSION "1.0.0"
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -61,6 +64,7 @@ private:
     // Output display
     QTextEdit *outputTextEdit;
     QLabel *statusLabel;
+    QLabel *versionLabel;
     
     // Results display
     QTabWidget *resultsTabWidget;

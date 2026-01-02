@@ -1,5 +1,7 @@
 # Football Analysis GUI
 
+**Version 1.0.0**
+
 A Qt6 desktop application for analyzing football/soccer match videos using computer vision and machine learning.
 
 ## Overview
