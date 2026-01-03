@@ -854,20 +854,25 @@ void MainWindow::updateElapsedTime()
 
 void MainWindow::loadStyleSheet()
 {
-    // Load modern QSS stylesheet
     QFile styleFile(":/modern_style.qss");
-    
-    // If resource not found, try file system
+
     if (!styleFile.exists()) {
         styleFile.setFileName("modern_style.qss");
     }
-    
-    if (styleFile.open(QFile::ReadOnly | QFile::Text)) {
-        QString styleSheet = QLatin1String(styleFile.readAll());
-        QApplication::instance()->setStyleSheet(styleSheet);
-        styleFile.close();
-        qDebug() << "Modern stylesheet loaded successfully";
+
+    if (!styleFile.open(QFile::ReadOnly | QFile::Text)) {
+        qDebug() << "Failed to open stylesheet file";
+        return;
+    }
+
+    QString styleSheet = QString::fromUtf8(styleFile.readAll());
+    styleFile.close();
+
+    // ✔ 這裡一定要 cast 成 QApplication*
+    if (QApplication *app = qobject_cast<QApplication*>(QApplication::instance())) {
+        app->setStyleSheet(styleSheet);
+        qDebug() << "Stylesheet applied successfully";
     } else {
-        qDebug() << "Failed to load stylesheet. Using default Qt styling.";
+        qDebug() << "QApplication instance not found. Cannot set stylesheet.";
     }
 }
