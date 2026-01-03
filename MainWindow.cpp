@@ -72,6 +72,34 @@ MainWindow::~MainWindow()
     }
 }
 
+QString MainWindow::getProjectRootPath() const
+{
+    // Get the directory containing the executable
+    QString exeDir = QCoreApplication::applicationDirPath();
+    
+    // Search upward for the project root (where FootAnalysisGUI.pro and foot-Function exist)
+    QDir dir(exeDir);
+    int maxLevelsUp = 5;  // Maximum levels to search upward
+    
+    for (int i = 0; i < maxLevelsUp; ++i) {
+        // Check if foot-Function directory exists here
+        if (dir.exists("foot-Function") && dir.exists("FootAnalysisGUI.pro")) {
+            qDebug() << "Found project root at:" << dir.absolutePath();
+            return dir.absolutePath();
+        }
+        
+        // Go up one level
+        if (!dir.cdUp()) {
+            break;  // Reached filesystem root
+        }
+    }
+    
+    // Fallback: assume foot-Function is in the same directory as executable
+    // This handles the case where the exe is run from the project root
+    qDebug() << "Could not find project root, using exe directory:" << exeDir;
+    return exeDir;
+}
+
 void MainWindow::setupUI()
 {
     // Create main splitter for dashboard layout
@@ -446,12 +474,12 @@ void MainWindow::onStartAnalysis()
     }
     
     // Setup Python command
-    QString exeDir = QCoreApplication::applicationDirPath();
-    QString scriptPath = QDir(exeDir).absoluteFilePath("../../foot-Function/main.py");
+    QString projectRoot = getProjectRootPath();
+    QString scriptPath = QDir(projectRoot).absoluteFilePath("foot-Function/main.py");
     
     if (!QFileInfo::exists(scriptPath)) {
         QMessageBox::critical(this, "Script Not Found", 
-            QString("Python script not found at: %1\n\nMake sure the foot-Function directory is present.").arg(scriptPath));
+            QString("Python script not found at: %1\n\nMake sure the foot-Function directory is present in the project root.").arg(scriptPath));
         return;
     }
     
@@ -461,7 +489,7 @@ void MainWindow::onStartAnalysis()
     arguments << "--model" << modelPath;
     
     // Start the process
-    QString workingDir = QDir(exeDir).absoluteFilePath("../../foot-Function");
+    QString workingDir = QDir(projectRoot).absoluteFilePath("foot-Function");
     pythonProcess->setWorkingDirectory(workingDir);
     pythonProcess->start("python", arguments);
     
@@ -543,13 +571,9 @@ void MainWindow::onProcessFinished(int exitCode, QProcess::ExitStatus exitStatus
         statusLabel->setText("✓ Analysis completed successfully");
         statusLabel->setStyleSheet("color: #28a745; padding: 12px; border-left: 4px solid #28a745; border-radius: 4px; background-color: #f0fff4;");
         
-        // Get output directory
-        // Note: This path is relative to the executable location and assumes the project
-        // structure where the executable is in a build directory and foot-Function is at
-        // the repository root. This works for the standard Qt Creator build configuration.
-        // Path resolution: [build-dir]/[executable] -> ../../foot-Function/output_videos
-        QString exeDir = QCoreApplication::applicationDirPath();
-        QString outputDirPath = QDir(exeDir).absoluteFilePath("../../foot-Function/output_videos");
+        // Get output directory from project root
+        QString projectRoot = getProjectRootPath();
+        QString outputDirPath = QDir(projectRoot).absoluteFilePath("foot-Function/output_videos");
         
         // Load CSV data
         QString csvPath = QDir(outputDirPath).absoluteFilePath("data_output.csv");
@@ -589,8 +613,8 @@ void MainWindow::onProcessFinished(int exitCode, QProcess::ExitStatus exitStatus
 QString MainWindow::findOutputVideo()
 {
     // Look for output in the foot-Function/output_videos directory
-    QString exeDir = QCoreApplication::applicationDirPath();
-    QString outputDirPath = QDir(exeDir).absoluteFilePath("../../foot-Function/output_videos");
+    QString projectRoot = getProjectRootPath();
+    QString outputDirPath = QDir(projectRoot).absoluteFilePath("foot-Function/output_videos");
     QDir outputDir(outputDirPath);
     
     if (!outputDir.exists()) {

@@ -56,6 +56,7 @@ private:
     void loadAndDisplayCSV(const QString &csvPath);
     void loadAndDisplayJSON(const QString &jsonPath);
     void loadAndPlayVideo(const QString &videoPath);
+    QString getProjectRootPath() const;
     
     // UI Components
     QWidget *centralWidget;
