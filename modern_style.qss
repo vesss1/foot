@@ -246,6 +246,15 @@ QLabel[statusLabel="true"] {
     border-radius: 4px;
 }
 
+/* Elapsed Time Label */
+QLabel[elapsedTime="true"] {
+    font-size: 9pt;
+    color: #666666;
+    font-style: italic;
+    padding: 4px;
+    text-align: center;
+}
+
 /* ===== Status Bar ===== */
 QStatusBar {
     background-color: #ffffff;

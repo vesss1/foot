@@ -25,6 +25,9 @@
 #include <QSplitter>
 #include <QStatusBar>
 #include <QToolButton>
+#include <QProgressBar>
+#include <QElapsedTimer>
+#include <QTimer>
 
 class MainWindow : public QMainWindow
 {
@@ -43,6 +46,7 @@ private slots:
     void onProcessFinished(int exitCode, QProcess::ExitStatus exitStatus);
     void onPlayPauseVideo();
     void onStopVideo();
+    void updateElapsedTime();
 
 private:
     void setupUI();
@@ -67,6 +71,10 @@ private:
     // Output display
     QTextEdit *outputTextEdit;
     QLabel *statusLabel;
+    QProgressBar *progressBar;
+    QLabel *elapsedTimeLabel;
+    QElapsedTimer *elapsedTimer;
+    QTimer *updateTimer;
     
     // Results display
     QTabWidget *resultsTabWidget;

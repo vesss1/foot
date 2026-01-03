@@ -23,6 +23,10 @@ MainWindow::MainWindow(QWidget *parent)
     , startButton(nullptr)
     , outputTextEdit(nullptr)
     , statusLabel(nullptr)
+    , progressBar(nullptr)
+    , elapsedTimeLabel(nullptr)
+    , elapsedTimer(nullptr)
+    , updateTimer(nullptr)
     , resultsTabWidget(nullptr)
     , resultImageLabel(nullptr)
     , resultScrollArea(nullptr)
@@ -152,7 +156,29 @@ void MainWindow::setupUI()
     startButton->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     controlLayout->addWidget(startButton);
     
+    // Progress Bar (hidden initially)
+    progressBar = new QProgressBar(this);
+    progressBar->setRange(0, 0);  // Indeterminate mode
+    progressBar->setTextVisible(false);
+    progressBar->setMinimumHeight(20);
+    progressBar->setVisible(false);  // Hidden initially
+    progressBar->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    controlLayout->addWidget(progressBar);
+    
+    // Elapsed Time Label (hidden initially)
+    elapsedTimeLabel = new QLabel("Elapsed: 0:00", this);
+    elapsedTimeLabel->setProperty("elapsedTime", true);
+    elapsedTimeLabel->setAlignment(Qt::AlignCenter);
+    elapsedTimeLabel->setVisible(false);  // Hidden initially
+    elapsedTimeLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    controlLayout->addWidget(elapsedTimeLabel);
+    
     sidebarLayout->addWidget(controlGroup);
+    
+    // Initialize timers
+    elapsedTimer = new QElapsedTimer();
+    updateTimer = new QTimer(this);
+    connect(updateTimer, &QTimer::timeout, this, &MainWindow::updateElapsedTime);
     
     // Status/Progress Section
     QGroupBox *statusGroup = new QGroupBox("Status", this);
@@ -204,7 +230,10 @@ void MainWindow::setupUI()
         "<div style='text-align: center; color: #666; font-size: 14pt;'>"
         "<p style='font-size: 48pt; margin: 20px;'>📊</p>"
         "<p style='font-weight: bold; margin: 10px;'>No Results Yet</p>"
-        "<p style='font-size: 10pt; margin: 10px;'>Start an analysis to see results here</p>"
+        "<p style='font-size: 10pt; margin: 5px 10px;'>1. Select a video file</p>"
+        "<p style='font-size: 10pt; margin: 5px 10px;'>2. Select a YOLO model</p>"
+        "<p style='font-size: 10pt; margin: 5px 10px;'>3. Click \"Start Analysis\"</p>"
+        "<p style='font-size: 9pt; color: #999; margin: 15px 10px;'>Results will appear here after analysis completes</p>"
         "</div>"
     );
     resultImageLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -446,7 +475,18 @@ void MainWindow::onStartAnalysis()
     
     analysisRunning = true;
     startButton->setEnabled(false);
-    statusLabel->setText("Status: Running analysis...");
+    statusLabel->setText("Running analysis...");
+    statusLabel->setStyleSheet("color: #0078d4; padding: 12px; border-left: 4px solid #0078d4; border-radius: 4px; background-color: #f0f8ff;");
+    
+    // Show and start progress indicators
+    progressBar->setVisible(true);
+    progressBar->setRange(0, 0);  // Indeterminate mode
+    
+    elapsedTimer->start();
+    updateTimer->start(1000);  // Update every second
+    elapsedTimeLabel->setVisible(true);
+    elapsedTimeLabel->setText("Elapsed: 0:00");
+    
     outputTextEdit->append("=== Analysis Started ===\n");
     outputTextEdit->append(QString("Command: python %1\n").arg(arguments.join(" ")));
 }
@@ -484,17 +524,24 @@ void MainWindow::onProcessFinished(int exitCode, QProcess::ExitStatus exitStatus
     analysisRunning = false;
     startButton->setEnabled(true);
     
+    // Hide and stop progress indicators
+    progressBar->setVisible(false);
+    updateTimer->stop();
+    elapsedTimeLabel->setVisible(false);
+    
     outputTextEdit->append("\n=== Analysis Finished ===\n");
     outputTextEdit->append(QString("Exit Code: %1\n").arg(exitCode));
     
     if (exitStatus == QProcess::CrashExit) {
-        statusLabel->setText("Status: Process crashed");
+        statusLabel->setText("✗ Error: Process crashed");
+        statusLabel->setStyleSheet("color: #dc3545; padding: 12px; border-left: 4px solid #dc3545; border-radius: 4px; background-color: #fff5f5;");
         QMessageBox::critical(this, "Process Crashed", "The Python process crashed unexpectedly.");
         return;
     }
     
     if (exitCode == 0) {
-        statusLabel->setText("Status: Analysis completed successfully");
+        statusLabel->setText("✓ Analysis completed successfully");
+        statusLabel->setStyleSheet("color: #28a745; padding: 12px; border-left: 4px solid #28a745; border-radius: 4px; background-color: #f0fff4;");
         
         // Get output directory
         // Note: This path is relative to the executable location and assumes the project
@@ -533,7 +580,8 @@ void MainWindow::onProcessFinished(int exitCode, QProcess::ExitStatus exitStatus
             resultImageLabel->setText("Analysis complete!\n\nCheck the Data Table and Video Output tabs to view results.");
         }
     } else {
-        statusLabel->setText(QString("Status: Analysis failed (exit code %1)").arg(exitCode));
+        statusLabel->setText(QString("✗ Error: Analysis failed (exit code %1)").arg(exitCode));
+        statusLabel->setStyleSheet("color: #dc3545; padding: 12px; border-left: 4px solid #dc3545; border-radius: 4px; background-color: #fff5f5;");
         resultImageLabel->setText("Analysis failed. Check the log for error details.");
     }
 }
@@ -787,6 +835,21 @@ void MainWindow::onStopVideo()
 {
     mediaPlayer->stop();
     playPauseButton->setText("Play");
+}
+
+void MainWindow::updateElapsedTime()
+{
+    if (elapsedTimer->isValid()) {
+        qint64 elapsed = elapsedTimer->elapsed();  // milliseconds
+        int seconds = elapsed / 1000;
+        int minutes = seconds / 60;
+        seconds = seconds % 60;
+        
+        QString timeText = QString("Elapsed: %1:%2")
+            .arg(minutes)
+            .arg(seconds, 2, 10, QChar('0'));
+        elapsedTimeLabel->setText(timeText);
+    }
 }
 
 void MainWindow::loadStyleSheet()
