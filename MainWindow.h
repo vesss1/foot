@@ -8,6 +8,8 @@
 #include <QLabel>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
+#include <QGridLayout>
+#include <QFormLayout>
 #include <QLineEdit>
 #include <QFileDialog>
 #include <QMessageBox>
@@ -20,6 +22,12 @@
 #include <QtMultimedia/QMediaPlayer>
 #include <QtMultimediaWidgets/QVideoWidget>
 #include <QtMultimedia/QAudioOutput>
+#include <QSplitter>
+#include <QStatusBar>
+#include <QToolButton>
+#include <QProgressBar>
+#include <QElapsedTimer>
+#include <QTimer>
 
 class MainWindow : public QMainWindow
 {
@@ -38,14 +46,17 @@ private slots:
     void onProcessFinished(int exitCode, QProcess::ExitStatus exitStatus);
     void onPlayPauseVideo();
     void onStopVideo();
+    void updateElapsedTime();
 
 private:
     void setupUI();
+    void loadStyleSheet();
     void displayResultMedia(const QString &mediaPath);
     QString findOutputVideo();
     void loadAndDisplayCSV(const QString &csvPath);
     void loadAndDisplayJSON(const QString &jsonPath);
     void loadAndPlayVideo(const QString &videoPath);
+    QString getProjectRootPath() const;
     
     // UI Components
     QWidget *centralWidget;
@@ -53,20 +64,23 @@ private:
     
     // Input controls
     QLineEdit *inputVideoPathEdit;
-    QPushButton *browseInputButton;
+    QToolButton *browseInputButton;
     QLineEdit *modelPathEdit;
-    QPushButton *browseModelButton;
+    QToolButton *browseModelButton;
     QPushButton *startButton;
     
     // Output display
     QTextEdit *outputTextEdit;
     QLabel *statusLabel;
+    QProgressBar *progressBar;
+    QLabel *elapsedTimeLabel;
+    QElapsedTimer *elapsedTimer;
+    QTimer *updateTimer;
     
     // Results display
     QTabWidget *resultsTabWidget;
     QLabel *resultImageLabel;
     QScrollArea *resultScrollArea;
-    QGroupBox *resultsGroupBox;
     
     // Data display (CSV/JSON)
     QTableWidget *dataTableWidget;

@@ -1,5 +1,5 @@
 #include "MainWindow.h"
-#include <QCoreApplication>
+#include <QApplication>
 #include <QDir>
 #include <QFileInfo>
 #include <QImageReader>
@@ -23,10 +23,13 @@ MainWindow::MainWindow(QWidget *parent)
     , startButton(nullptr)
     , outputTextEdit(nullptr)
     , statusLabel(nullptr)
+    , progressBar(nullptr)
+    , elapsedTimeLabel(nullptr)
+    , elapsedTimer(nullptr)
+    , updateTimer(nullptr)
     , resultsTabWidget(nullptr)
     , resultImageLabel(nullptr)
     , resultScrollArea(nullptr)
-    , resultsGroupBox(nullptr)
     , dataTableWidget(nullptr)
     , dataTab(nullptr)
     , mediaPlayer(nullptr)
@@ -38,8 +41,16 @@ MainWindow::MainWindow(QWidget *parent)
     , pythonProcess(nullptr)
     , analysisRunning(false)
 {
+    // Load and apply modern QSS stylesheet
+    loadStyleSheet();
+    
     setupUI();
     setWindowTitle("Foot Analysis GUI");
+    
+    // Set reasonable minimum size for window
+    setMinimumSize(900, 700);  // Minimum: 900x700 for usability
+    
+    // Set default size
     resize(1200, 900);
 }
 
@@ -61,82 +72,213 @@ MainWindow::~MainWindow()
     }
 }
 
+QString MainWindow::getProjectRootPath() const
+{
+    // Get the directory containing the executable
+    QString exeDir = QCoreApplication::applicationDirPath();
+    
+    // Search upward for the project root (where FootAnalysisGUI.pro and foot-Function exist)
+    QDir dir(exeDir);
+    int maxLevelsUp = 5;  // Maximum levels to search upward
+    
+    for (int i = 0; i < maxLevelsUp; ++i) {
+        // Check if foot-Function directory exists here
+        if (dir.exists("foot-Function") && dir.exists("FootAnalysisGUI.pro")) {
+            qDebug() << "Found project root at:" << dir.absolutePath();
+            return dir.absolutePath();
+        }
+        
+        // Go up one level
+        if (!dir.cdUp()) {
+            break;  // Reached filesystem root
+        }
+    }
+    
+    // Fallback: assume foot-Function is in the same directory as executable
+    // This handles the case where the exe is run from the project root
+    qDebug() << "Could not find project root, using exe directory:" << exeDir;
+    return exeDir;
+}
+
 void MainWindow::setupUI()
 {
-    centralWidget = new QWidget(this);
-    setCentralWidget(centralWidget);
+    // Create main splitter for dashboard layout
+    QSplitter *mainSplitter = new QSplitter(Qt::Horizontal, this);
+    mainSplitter->setChildrenCollapsible(false);
+    setCentralWidget(mainSplitter);
     
-    mainLayout = new QVBoxLayout(centralWidget);
+    // ===== LEFT SIDEBAR (Fixed ~320px) =====
+    QWidget *leftSidebar = new QWidget(this);
+    leftSidebar->setProperty("sidebar", true);
+    leftSidebar->setMinimumWidth(280);
+    leftSidebar->setMaximumWidth(400);
     
-    // Input Video Section
-    QGroupBox *inputVideoGroup = new QGroupBox("Input Video", this);
-    QHBoxLayout *inputVideoLayout = new QHBoxLayout(inputVideoGroup);
+    QVBoxLayout *sidebarLayout = new QVBoxLayout(leftSidebar);
+    sidebarLayout->setSpacing(16);
+    sidebarLayout->setContentsMargins(12, 12, 12, 12);
+    
+    // Input Configuration Section
+    QGroupBox *inputGroup = new QGroupBox("Input Configuration", this);
+    inputGroup->setProperty("sidebarCard", true);
+    
+    QVBoxLayout *inputLayout = new QVBoxLayout(inputGroup);
+    inputLayout->setSpacing(12);
+    inputLayout->setContentsMargins(16, 20, 16, 16);
+    
+    // Video File
+    QLabel *videoLabel = new QLabel("Video File: <span style='color: red;'>*</span>", this);
+    inputLayout->addWidget(videoLabel);
+    
+    QHBoxLayout *videoRowLayout = new QHBoxLayout();
+    videoRowLayout->setSpacing(6);
     inputVideoPathEdit = new QLineEdit(this);
-    inputVideoPathEdit->setPlaceholderText("Select input video file...");
-    browseInputButton = new QPushButton("Browse...", this);
-    inputVideoLayout->addWidget(inputVideoPathEdit);
-    inputVideoLayout->addWidget(browseInputButton);
-    mainLayout->addWidget(inputVideoGroup);
+    inputVideoPathEdit->setPlaceholderText("Select video file...");
+    inputVideoPathEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     
-    // Model Section
-    QGroupBox *modelGroup = new QGroupBox("YOLO Model", this);
-    QHBoxLayout *modelLayout = new QHBoxLayout(modelGroup);
+    browseInputButton = new QToolButton(this);
+    browseInputButton->setText("...");
+    browseInputButton->setToolTip("Browse for video file");
+    browseInputButton->setMinimumSize(28, 28);
+    browseInputButton->setMaximumSize(28, 28);
+    browseInputButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    
+    videoRowLayout->addWidget(inputVideoPathEdit, 1);
+    videoRowLayout->addWidget(browseInputButton, 0);
+    inputLayout->addLayout(videoRowLayout);
+    
+    // YOLO Model
+    QLabel *modelLabel = new QLabel("YOLO Model: <span style='color: red;'>*</span>", this);
+    inputLayout->addWidget(modelLabel);
+    
+    QHBoxLayout *modelRowLayout = new QHBoxLayout();
+    modelRowLayout->setSpacing(6);
     modelPathEdit = new QLineEdit(this);
-    modelPathEdit->setPlaceholderText("Select YOLO model file...");
-    browseModelButton = new QPushButton("Browse...", this);
-    modelLayout->addWidget(modelPathEdit);
-    modelLayout->addWidget(browseModelButton);
-    mainLayout->addWidget(modelGroup);
+    modelPathEdit->setPlaceholderText("Select YOLO model...");
+    modelPathEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     
-    // Start Button
+    browseModelButton = new QToolButton(this);
+    browseModelButton->setText("...");
+    browseModelButton->setToolTip("Browse for YOLO model");
+    browseModelButton->setMinimumSize(28, 28);
+    browseModelButton->setMaximumSize(28, 28);
+    browseModelButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    
+    modelRowLayout->addWidget(modelPathEdit, 1);
+    modelRowLayout->addWidget(browseModelButton, 0);
+    inputLayout->addLayout(modelRowLayout);
+    
+    sidebarLayout->addWidget(inputGroup);
+    
+    // Analysis Control Section
+    QGroupBox *controlGroup = new QGroupBox("Analysis Control", this);
+    controlGroup->setProperty("sidebarCard", true);
+    
+    QVBoxLayout *controlLayout = new QVBoxLayout(controlGroup);
+    controlLayout->setSpacing(12);
+    controlLayout->setContentsMargins(16, 20, 16, 16);
+    
+    // Primary CTA - Start Analysis Button
     startButton = new QPushButton("Start Analysis", this);
-    startButton->setMinimumHeight(40);
-    mainLayout->addWidget(startButton);
+    startButton->setProperty("primary", true);
+    startButton->setMinimumHeight(50);
+    startButton->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    controlLayout->addWidget(startButton);
     
-    // Status Label
+    // Progress Bar (hidden initially)
+    progressBar = new QProgressBar(this);
+    progressBar->setRange(0, 0);  // Indeterminate mode
+    progressBar->setTextVisible(false);
+    progressBar->setMinimumHeight(20);
+    progressBar->setVisible(false);  // Hidden initially
+    progressBar->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    controlLayout->addWidget(progressBar);
+    
+    // Elapsed Time Label (hidden initially)
+    elapsedTimeLabel = new QLabel("Elapsed: 0:00", this);
+    elapsedTimeLabel->setProperty("elapsedTime", true);
+    elapsedTimeLabel->setAlignment(Qt::AlignCenter);
+    elapsedTimeLabel->setVisible(false);  // Hidden initially
+    elapsedTimeLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    controlLayout->addWidget(elapsedTimeLabel);
+    
+    sidebarLayout->addWidget(controlGroup);
+    
+    // Initialize timers
+    elapsedTimer = new QElapsedTimer();
+    updateTimer = new QTimer(this);
+    connect(updateTimer, &QTimer::timeout, this, &MainWindow::updateElapsedTime);
+    
+    // Status/Progress Section
+    QGroupBox *statusGroup = new QGroupBox("Status", this);
+    statusGroup->setProperty("sidebarCard", true);
+    
+    QVBoxLayout *statusGroupLayout = new QVBoxLayout(statusGroup);
+    statusGroupLayout->setSpacing(8);
+    statusGroupLayout->setContentsMargins(16, 20, 16, 16);
+    
     statusLabel = new QLabel("Ready", this);
-    statusLabel->setStyleSheet("QLabel { padding: 5px; background-color: #f0f0f0; }");
-    mainLayout->addWidget(statusLabel);
+    statusLabel->setProperty("statusLabel", true);
+    statusLabel->setWordWrap(true);
+    statusLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    statusGroupLayout->addWidget(statusLabel);
     
-    // Output Log Section
-    QGroupBox *outputGroup = new QGroupBox("Analysis Log", this);
-    QVBoxLayout *outputLayout = new QVBoxLayout(outputGroup);
-    outputTextEdit = new QTextEdit(this);
-    outputTextEdit->setReadOnly(true);
-    outputTextEdit->setMinimumHeight(150);
-    outputLayout->addWidget(outputTextEdit);
-    mainLayout->addWidget(outputGroup);
+    sidebarLayout->addWidget(statusGroup);
     
-    // Results Section with Tabs
-    resultsGroupBox = new QGroupBox("Analysis Results", this);
-    QVBoxLayout *resultsLayout = new QVBoxLayout(resultsGroupBox);
+    // Add stretch to push everything to the top
+    sidebarLayout->addStretch(1);
+    
+    mainSplitter->addWidget(leftSidebar);
+    
+    // ===== RIGHT MAIN AREA (TabWidget) =====
+    QWidget *mainArea = new QWidget(this);
+    QVBoxLayout *mainAreaLayout = new QVBoxLayout(mainArea);
+    mainAreaLayout->setSpacing(0);
+    mainAreaLayout->setContentsMargins(0, 0, 0, 0);
     
     resultsTabWidget = new QTabWidget(this);
+    resultsTabWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     
-    // Tab 1: Summary/Image View
+    // Tab 1: Summary (with empty state)
     QWidget *summaryTab = new QWidget();
+    summaryTab->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     QVBoxLayout *summaryLayout = new QVBoxLayout(summaryTab);
+    summaryLayout->setContentsMargins(16, 16, 16, 16);
+    summaryLayout->setSpacing(0);
     
     resultScrollArea = new QScrollArea(this);
     resultScrollArea->setWidgetResizable(true);
-    resultScrollArea->setMinimumHeight(200);
+    resultScrollArea->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    resultScrollArea->setFrameShape(QFrame::NoFrame);
     
     resultImageLabel = new QLabel(this);
+    resultImageLabel->setProperty("emptyState", true);
     resultImageLabel->setAlignment(Qt::AlignCenter);
     resultImageLabel->setScaledContents(false);
-    resultImageLabel->setText("Results will appear here after analysis completes.");
-    resultImageLabel->setStyleSheet("QLabel { background-color: #e0e0e0; padding: 20px; }");
+    resultImageLabel->setText(
+        "<div style='text-align: center; color: #666; font-size: 14pt;'>"
+        "<p style='font-size: 48pt; margin: 20px;'>📊</p>"
+        "<p style='font-weight: bold; margin: 10px;'>No Results Yet</p>"
+        "<p style='font-size: 10pt; margin: 5px 10px;'>1. Select a video file</p>"
+        "<p style='font-size: 10pt; margin: 5px 10px;'>2. Select a YOLO model</p>"
+        "<p style='font-size: 10pt; margin: 5px 10px;'>3. Click \"Start Analysis\"</p>"
+        "<p style='font-size: 9pt; color: #999; margin: 15px 10px;'>Results will appear here after analysis completes</p>"
+        "</div>"
+    );
+    resultImageLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     
     resultScrollArea->setWidget(resultImageLabel);
     summaryLayout->addWidget(resultScrollArea);
     resultsTabWidget->addTab(summaryTab, "Summary");
     
-    // Tab 2: Data Table (CSV/JSON)
+    // Tab 2: Data Table
     dataTab = new QWidget();
+    dataTab->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     QVBoxLayout *dataLayout = new QVBoxLayout(dataTab);
+    dataLayout->setContentsMargins(16, 16, 16, 16);
+    dataLayout->setSpacing(12);
     
     QLabel *dataLabel = new QLabel("Player Statistics and Team Possession", this);
-    dataLabel->setStyleSheet("QLabel { font-weight: bold; padding: 5px; }");
+    dataLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     dataLayout->addWidget(dataLabel);
     
     dataTableWidget = new QTableWidget(this);
@@ -144,36 +286,83 @@ void MainWindow::setupUI()
     dataTableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
     dataTableWidget->horizontalHeader()->setStretchLastSection(true);
     dataTableWidget->setAlternatingRowColors(true);
+    dataTableWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     dataLayout->addWidget(dataTableWidget);
     
     resultsTabWidget->addTab(dataTab, "Data Table");
     
-    // Tab 3: Video Player
+    // Tab 3: Video Output
     videoTab = new QWidget();
+    videoTab->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     QVBoxLayout *videoLayout = new QVBoxLayout(videoTab);
+    videoLayout->setContentsMargins(16, 16, 16, 16);
+    videoLayout->setSpacing(12);
     
     videoWidget = new QVideoWidget(this);
+    videoWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     videoWidget->setMinimumHeight(300);
-    videoWidget->setStyleSheet("background-color: black;");
-    videoLayout->addWidget(videoWidget);
+    videoLayout->addWidget(videoWidget, 1);
     
     // Video controls
     QHBoxLayout *controlsLayout = new QHBoxLayout();
+    controlsLayout->setSpacing(8);
     playPauseButton = new QPushButton("Play", this);
     playPauseButton->setEnabled(false);
+    playPauseButton->setMinimumWidth(80);
+    playPauseButton->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     stopButton = new QPushButton("Stop", this);
     stopButton->setEnabled(false);
+    stopButton->setMinimumWidth(80);
+    stopButton->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     
     controlsLayout->addWidget(playPauseButton);
     controlsLayout->addWidget(stopButton);
     controlsLayout->addStretch();
     
-    videoLayout->addLayout(controlsLayout);
+    videoLayout->addLayout(controlsLayout, 0);
     
     resultsTabWidget->addTab(videoTab, "Video Output");
     
-    resultsLayout->addWidget(resultsTabWidget);
-    mainLayout->addWidget(resultsGroupBox);
+    // Tab 4: Logs
+    QWidget *logsTab = new QWidget();
+    logsTab->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    QVBoxLayout *logsLayout = new QVBoxLayout(logsTab);
+    logsLayout->setContentsMargins(16, 16, 16, 16);
+    logsLayout->setSpacing(12);
+    
+    QHBoxLayout *logsHeaderLayout = new QHBoxLayout();
+    QLabel *logsLabel = new QLabel("Analysis Logs", this);
+    logsHeaderLayout->addWidget(logsLabel);
+    logsHeaderLayout->addStretch();
+    
+    QPushButton *clearLogButton = new QPushButton("Clear", this);
+    clearLogButton->setMinimumWidth(70);
+    clearLogButton->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+    logsHeaderLayout->addWidget(clearLogButton);
+    
+    logsLayout->addLayout(logsHeaderLayout);
+    
+    outputTextEdit = new QTextEdit(this);
+    outputTextEdit->setReadOnly(true);
+    outputTextEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    outputTextEdit->setMinimumHeight(200);
+    logsLayout->addWidget(outputTextEdit);
+    
+    resultsTabWidget->addTab(logsTab, "Logs");
+    
+    mainAreaLayout->addWidget(resultsTabWidget);
+    
+    mainSplitter->addWidget(mainArea);
+    
+    // Set splitter sizes (left sidebar ~320px, rest for main area)
+    mainSplitter->setStretchFactor(0, 0);  // Sidebar doesn't stretch
+    mainSplitter->setStretchFactor(1, 1);  // Main area stretches
+    mainSplitter->setSizes(QList<int>() << 320 << 880);
+    
+    // Connect clear log button
+    connect(clearLogButton, &QPushButton::clicked, [this]() {
+        outputTextEdit->clear();
+    });
     
     // Initialize media player
     mediaPlayer = new QMediaPlayer(this);
@@ -181,9 +370,21 @@ void MainWindow::setupUI()
     mediaPlayer->setAudioOutput(audioOutput);
     mediaPlayer->setVideoOutput(videoWidget);
     
+    // Create status bar
+    QStatusBar *statusBar = new QStatusBar(this);
+    setStatusBar(statusBar);
+    
+    QLabel *statusBarLabel = new QLabel("Ready", this);
+    statusBarLabel->setStyleSheet("padding: 4px; font-size: 9pt;");
+    statusBar->addWidget(statusBarLabel);
+    
+    QLabel *versionLabel = new QLabel("v1.0.0", this);
+    versionLabel->setStyleSheet("padding: 4px; font-size: 9pt; color: #666;");
+    statusBar->addPermanentWidget(versionLabel);
+    
     // Connect signals
-    connect(browseInputButton, &QPushButton::clicked, this, &MainWindow::onBrowseInputVideo);
-    connect(browseModelButton, &QPushButton::clicked, this, &MainWindow::onBrowseModel);
+    connect(browseInputButton, &QToolButton::clicked, this, &MainWindow::onBrowseInputVideo);
+    connect(browseModelButton, &QToolButton::clicked, this, &MainWindow::onBrowseModel);
     connect(startButton, &QPushButton::clicked, this, &MainWindow::onStartAnalysis);
     connect(playPauseButton, &QPushButton::clicked, this, &MainWindow::onPlayPauseVideo);
     connect(stopButton, &QPushButton::clicked, this, &MainWindow::onStopVideo);
@@ -273,12 +474,12 @@ void MainWindow::onStartAnalysis()
     }
     
     // Setup Python command
-    QString exeDir = QCoreApplication::applicationDirPath();
-    QString scriptPath = QDir(exeDir).absoluteFilePath("../../foot-Function/main.py");
+    QString projectRoot = getProjectRootPath();
+    QString scriptPath = QDir(projectRoot).absoluteFilePath("foot-Function/main.py");
     
     if (!QFileInfo::exists(scriptPath)) {
         QMessageBox::critical(this, "Script Not Found", 
-            QString("Python script not found at: %1\n\nMake sure the foot-Function directory is present.").arg(scriptPath));
+            QString("Python script not found at: %1\n\nMake sure the foot-Function directory is present in the project root.").arg(scriptPath));
         return;
     }
     
@@ -288,7 +489,7 @@ void MainWindow::onStartAnalysis()
     arguments << "--model" << modelPath;
     
     // Start the process
-    QString workingDir = QDir(exeDir).absoluteFilePath("../../foot-Function");
+    QString workingDir = QDir(projectRoot).absoluteFilePath("foot-Function");
     pythonProcess->setWorkingDirectory(workingDir);
     pythonProcess->start("python", arguments);
     
@@ -302,7 +503,18 @@ void MainWindow::onStartAnalysis()
     
     analysisRunning = true;
     startButton->setEnabled(false);
-    statusLabel->setText("Status: Running analysis...");
+    statusLabel->setText("Running analysis...");
+    statusLabel->setStyleSheet("color: #0078d4; padding: 12px; border-left: 4px solid #0078d4; border-radius: 4px; background-color: #f0f8ff;");
+    
+    // Show and start progress indicators
+    progressBar->setVisible(true);
+    progressBar->setRange(0, 0);  // Indeterminate mode
+    
+    elapsedTimer->start();
+    updateTimer->start(1000);  // Update every second
+    elapsedTimeLabel->setVisible(true);
+    elapsedTimeLabel->setText("Elapsed: 0:00");
+    
     outputTextEdit->append("=== Analysis Started ===\n");
     outputTextEdit->append(QString("Command: python %1\n").arg(arguments.join(" ")));
 }
@@ -340,25 +552,28 @@ void MainWindow::onProcessFinished(int exitCode, QProcess::ExitStatus exitStatus
     analysisRunning = false;
     startButton->setEnabled(true);
     
+    // Hide and stop progress indicators
+    progressBar->setVisible(false);
+    updateTimer->stop();
+    elapsedTimeLabel->setVisible(false);
+    
     outputTextEdit->append("\n=== Analysis Finished ===\n");
     outputTextEdit->append(QString("Exit Code: %1\n").arg(exitCode));
     
     if (exitStatus == QProcess::CrashExit) {
-        statusLabel->setText("Status: Process crashed");
+        statusLabel->setText("✗ Error: Process crashed");
+        statusLabel->setStyleSheet("color: #dc3545; padding: 12px; border-left: 4px solid #dc3545; border-radius: 4px; background-color: #fff5f5;");
         QMessageBox::critical(this, "Process Crashed", "The Python process crashed unexpectedly.");
         return;
     }
     
     if (exitCode == 0) {
-        statusLabel->setText("Status: Analysis completed successfully");
+        statusLabel->setText("✓ Analysis completed successfully");
+        statusLabel->setStyleSheet("color: #28a745; padding: 12px; border-left: 4px solid #28a745; border-radius: 4px; background-color: #f0fff4;");
         
-        // Get output directory
-        // Note: This path is relative to the executable location and assumes the project
-        // structure where the executable is in a build directory and foot-Function is at
-        // the repository root. This works for the standard Qt Creator build configuration.
-        // Path resolution: [build-dir]/[executable] -> ../../foot-Function/output_videos
-        QString exeDir = QCoreApplication::applicationDirPath();
-        QString outputDirPath = QDir(exeDir).absoluteFilePath("../../foot-Function/output_videos");
+        // Get output directory from project root
+        QString projectRoot = getProjectRootPath();
+        QString outputDirPath = QDir(projectRoot).absoluteFilePath("foot-Function/output_videos");
         
         // Load CSV data
         QString csvPath = QDir(outputDirPath).absoluteFilePath("data_output.csv");
@@ -389,7 +604,8 @@ void MainWindow::onProcessFinished(int exitCode, QProcess::ExitStatus exitStatus
             resultImageLabel->setText("Analysis complete!\n\nCheck the Data Table and Video Output tabs to view results.");
         }
     } else {
-        statusLabel->setText(QString("Status: Analysis failed (exit code %1)").arg(exitCode));
+        statusLabel->setText(QString("✗ Error: Analysis failed (exit code %1)").arg(exitCode));
+        statusLabel->setStyleSheet("color: #dc3545; padding: 12px; border-left: 4px solid #dc3545; border-radius: 4px; background-color: #fff5f5;");
         resultImageLabel->setText("Analysis failed. Check the log for error details.");
     }
 }
@@ -397,8 +613,8 @@ void MainWindow::onProcessFinished(int exitCode, QProcess::ExitStatus exitStatus
 QString MainWindow::findOutputVideo()
 {
     // Look for output in the foot-Function/output_videos directory
-    QString exeDir = QCoreApplication::applicationDirPath();
-    QString outputDirPath = QDir(exeDir).absoluteFilePath("../../foot-Function/output_videos");
+    QString projectRoot = getProjectRootPath();
+    QString outputDirPath = QDir(projectRoot).absoluteFilePath("foot-Function/output_videos");
     QDir outputDir(outputDirPath);
     
     if (!outputDir.exists()) {
@@ -462,12 +678,14 @@ void MainWindow::displayResultMedia(const QString &mediaPath)
             Qt::SmoothTransformation
         );
         
+        resultImageLabel->setProperty("emptyState", false);  // Remove empty state property
         resultImageLabel->setPixmap(scaledPixmap);
         resultImageLabel->setText("");
         return;
     }
     
     // Unknown file type
+    resultImageLabel->setProperty("emptyState", false);  // Remove empty state property
     resultImageLabel->setText(
         QString("Analysis complete!\n\nOutput saved to:\n%1").arg(mediaPath)
     );
@@ -641,4 +859,44 @@ void MainWindow::onStopVideo()
 {
     mediaPlayer->stop();
     playPauseButton->setText("Play");
+}
+
+void MainWindow::updateElapsedTime()
+{
+    if (elapsedTimer->isValid()) {
+        qint64 elapsed = elapsedTimer->elapsed();  // milliseconds
+        int seconds = elapsed / 1000;
+        int minutes = seconds / 60;
+        seconds = seconds % 60;
+        
+        QString timeText = QString("Elapsed: %1:%2")
+            .arg(minutes)
+            .arg(seconds, 2, 10, QChar('0'));
+        elapsedTimeLabel->setText(timeText);
+    }
+}
+
+void MainWindow::loadStyleSheet()
+{
+    QFile styleFile(":/modern_style.qss");
+
+    if (!styleFile.exists()) {
+        styleFile.setFileName("modern_style.qss");
+    }
+
+    if (!styleFile.open(QFile::ReadOnly | QFile::Text)) {
+        qDebug() << "Failed to open stylesheet file";
+        return;
+    }
+
+    QString styleSheet = QString::fromUtf8(styleFile.readAll());
+    styleFile.close();
+
+    // ✔ 這裡一定要 cast 成 QApplication*
+    if (QApplication *app = qobject_cast<QApplication*>(QApplication::instance())) {
+        app->setStyleSheet(styleSheet);
+        qDebug() << "Stylesheet applied successfully";
+    } else {
+        qDebug() << "QApplication instance not found. Cannot set stylesheet.";
+    }
 }
