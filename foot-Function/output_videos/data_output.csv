@@ -1,0 +1,26 @@
+Team,Player ID,Distance (m)
+team_1,6,64.88
+team_1,19,31.82
+team_1,12,70.39
+team_1,5,71.79
+team_1,132,46.66
+team_1,22,17.99
+team_1,15,64.65
+team_1,11,58.91
+team_1,142,36.17
+team_1,227,Not Detected
+team_2,1,55.99
+team_2,34,58.94
+team_2,3,76.27
+team_2,13,Not Detected
+team_2,120,23.32
+team_2,7,52.88
+team_2,156,Not Detected
+team_2,8,53.44
+team_2,14,64.7
+team_2,213,Not Detected
+team_2,236,Not Detected
+
+Summary - Team Possession Percentage,,
+Team 1 Possession,,54.53%
+Team 2 Possession,,45.47%
