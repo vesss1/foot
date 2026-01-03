@@ -37,6 +37,9 @@ MainWindow::MainWindow(QWidget *parent)
     , pythonProcess(nullptr)
     , analysisRunning(false)
 {
+    // Load and apply modern QSS stylesheet
+    loadStyleSheet();
+    
     setupUI();
     setWindowTitle("Foot Analysis GUI");
     
@@ -74,6 +77,7 @@ void MainWindow::setupUI()
     
     // ===== LEFT SIDEBAR (Fixed ~320px) =====
     QWidget *leftSidebar = new QWidget(this);
+    leftSidebar->setProperty("sidebar", true);
     leftSidebar->setMinimumWidth(280);
     leftSidebar->setMaximumWidth(400);
     
@@ -83,15 +87,14 @@ void MainWindow::setupUI()
     
     // Input Configuration Section
     QGroupBox *inputGroup = new QGroupBox("Input Configuration", this);
-    inputGroup->setStyleSheet("QGroupBox { font-size: 11pt; font-weight: bold; padding-top: 16px; }");
+    inputGroup->setProperty("sidebarCard", true);
     
     QVBoxLayout *inputLayout = new QVBoxLayout(inputGroup);
     inputLayout->setSpacing(12);
-    inputLayout->setContentsMargins(12, 20, 12, 12);
+    inputLayout->setContentsMargins(16, 20, 16, 16);
     
     // Video File
     QLabel *videoLabel = new QLabel("Video File: <span style='color: red;'>*</span>", this);
-    videoLabel->setStyleSheet("font-size: 10pt;");
     inputLayout->addWidget(videoLabel);
     
     QHBoxLayout *videoRowLayout = new QHBoxLayout();
@@ -113,7 +116,6 @@ void MainWindow::setupUI()
     
     // YOLO Model
     QLabel *modelLabel = new QLabel("YOLO Model: <span style='color: red;'>*</span>", this);
-    modelLabel->setStyleSheet("font-size: 10pt; margin-top: 8px;");
     inputLayout->addWidget(modelLabel);
     
     QHBoxLayout *modelRowLayout = new QHBoxLayout();
@@ -137,59 +139,31 @@ void MainWindow::setupUI()
     
     // Analysis Control Section
     QGroupBox *controlGroup = new QGroupBox("Analysis Control", this);
-    controlGroup->setStyleSheet("QGroupBox { font-size: 11pt; font-weight: bold; padding-top: 16px; }");
+    controlGroup->setProperty("sidebarCard", true);
     
     QVBoxLayout *controlLayout = new QVBoxLayout(controlGroup);
     controlLayout->setSpacing(12);
-    controlLayout->setContentsMargins(12, 20, 12, 12);
+    controlLayout->setContentsMargins(16, 20, 16, 16);
     
     // Primary CTA - Start Analysis Button
     startButton = new QPushButton("Start Analysis", this);
+    startButton->setProperty("primary", true);
     startButton->setMinimumHeight(50);
     startButton->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-    startButton->setStyleSheet(
-        "QPushButton {"
-        "  font-size: 13pt;"
-        "  font-weight: bold;"
-        "  background-color: #0078d4;"
-        "  color: white;"
-        "  border: none;"
-        "  border-radius: 4px;"
-        "  padding: 12px;"
-        "}"
-        "QPushButton:hover {"
-        "  background-color: #106ebe;"
-        "}"
-        "QPushButton:pressed {"
-        "  background-color: #005a9e;"
-        "}"
-        "QPushButton:disabled {"
-        "  background-color: #cccccc;"
-        "  color: #666666;"
-        "}"
-    );
     controlLayout->addWidget(startButton);
     
     sidebarLayout->addWidget(controlGroup);
     
     // Status/Progress Section
     QGroupBox *statusGroup = new QGroupBox("Status", this);
-    statusGroup->setStyleSheet("QGroupBox { font-size: 11pt; font-weight: bold; padding-top: 16px; }");
+    statusGroup->setProperty("sidebarCard", true);
     
     QVBoxLayout *statusGroupLayout = new QVBoxLayout(statusGroup);
     statusGroupLayout->setSpacing(8);
-    statusGroupLayout->setContentsMargins(12, 20, 12, 12);
+    statusGroupLayout->setContentsMargins(16, 20, 16, 16);
     
     statusLabel = new QLabel("Ready", this);
-    statusLabel->setStyleSheet(
-        "QLabel {"
-        "  padding: 12px;"
-        "  background-color: #f0f0f0;"
-        "  border-left: 4px solid #0078d4;"
-        "  border-radius: 3px;"
-        "  font-size: 10pt;"
-        "}"
-    );
+    statusLabel->setProperty("statusLabel", true);
     statusLabel->setWordWrap(true);
     statusLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     statusGroupLayout->addWidget(statusLabel);
@@ -209,7 +183,6 @@ void MainWindow::setupUI()
     
     resultsTabWidget = new QTabWidget(this);
     resultsTabWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    resultsTabWidget->setStyleSheet("QTabWidget::pane { border: none; }");
     
     // Tab 1: Summary (with empty state)
     QWidget *summaryTab = new QWidget();
@@ -224,6 +197,7 @@ void MainWindow::setupUI()
     resultScrollArea->setFrameShape(QFrame::NoFrame);
     
     resultImageLabel = new QLabel(this);
+    resultImageLabel->setProperty("emptyState", true);
     resultImageLabel->setAlignment(Qt::AlignCenter);
     resultImageLabel->setScaledContents(false);
     resultImageLabel->setText(
@@ -232,15 +206,6 @@ void MainWindow::setupUI()
         "<p style='font-weight: bold; margin: 10px;'>No Results Yet</p>"
         "<p style='font-size: 10pt; margin: 10px;'>Start an analysis to see results here</p>"
         "</div>"
-    );
-    resultImageLabel->setStyleSheet(
-        "QLabel {"
-        "  background-color: #fafafa;"
-        "  border: 2px dashed #ddd;"
-        "  border-radius: 8px;"
-        "  padding: 40px;"
-        "  min-height: 300px;"
-        "}"
     );
     resultImageLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     
@@ -256,7 +221,6 @@ void MainWindow::setupUI()
     dataLayout->setSpacing(12);
     
     QLabel *dataLabel = new QLabel("Player Statistics and Team Possession", this);
-    dataLabel->setStyleSheet("QLabel { font-weight: bold; font-size: 11pt; padding: 5px; }");
     dataLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     dataLayout->addWidget(dataLabel);
     
@@ -278,7 +242,6 @@ void MainWindow::setupUI()
     videoLayout->setSpacing(12);
     
     videoWidget = new QVideoWidget(this);
-    videoWidget->setStyleSheet("background-color: black;");
     videoWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     videoWidget->setMinimumHeight(300);
     videoLayout->addWidget(videoWidget, 1);
@@ -312,7 +275,6 @@ void MainWindow::setupUI()
     
     QHBoxLayout *logsHeaderLayout = new QHBoxLayout();
     QLabel *logsLabel = new QLabel("Analysis Logs", this);
-    logsLabel->setStyleSheet("QLabel { font-weight: bold; font-size: 11pt; padding: 5px; }");
     logsHeaderLayout->addWidget(logsLabel);
     logsHeaderLayout->addStretch();
     
@@ -327,7 +289,6 @@ void MainWindow::setupUI()
     outputTextEdit->setReadOnly(true);
     outputTextEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     outputTextEdit->setMinimumHeight(200);
-    outputTextEdit->setStyleSheet("font-size: 9pt; font-family: 'Consolas', 'Courier New', monospace;");
     logsLayout->addWidget(outputTextEdit);
     
     resultsTabWidget->addTab(logsTab, "Logs");
@@ -645,12 +606,14 @@ void MainWindow::displayResultMedia(const QString &mediaPath)
             Qt::SmoothTransformation
         );
         
+        resultImageLabel->setProperty("emptyState", false);  // Remove empty state property
         resultImageLabel->setPixmap(scaledPixmap);
         resultImageLabel->setText("");
         return;
     }
     
     // Unknown file type
+    resultImageLabel->setProperty("emptyState", false);  // Remove empty state property
     resultImageLabel->setText(
         QString("Analysis complete!\n\nOutput saved to:\n%1").arg(mediaPath)
     );
@@ -824,4 +787,24 @@ void MainWindow::onStopVideo()
 {
     mediaPlayer->stop();
     playPauseButton->setText("Play");
+}
+
+void MainWindow::loadStyleSheet()
+{
+    // Load modern QSS stylesheet
+    QFile styleFile(":/modern_style.qss");
+    
+    // If resource not found, try file system
+    if (!styleFile.exists()) {
+        styleFile.setFileName("modern_style.qss");
+    }
+    
+    if (styleFile.open(QFile::ReadOnly | QFile::Text)) {
+        QString styleSheet = QLatin1String(styleFile.readAll());
+        qApp->setStyleSheet(styleSheet);
+        styleFile.close();
+        qDebug() << "Modern stylesheet loaded successfully";
+    } else {
+        qDebug() << "Failed to load stylesheet. Using default Qt styling.";
+    }
 }

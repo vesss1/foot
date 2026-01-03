@@ -46,6 +46,7 @@ private slots:
 
 private:
     void setupUI();
+    void loadStyleSheet();
     void displayResultMedia(const QString &mediaPath);
     QString findOutputVideo();
     void loadAndDisplayCSV(const QString &csvPath);
