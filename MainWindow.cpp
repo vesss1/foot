@@ -1,5 +1,5 @@
 #include "MainWindow.h"
-#include <QCoreApplication>
+#include <QApplication>
 #include <QDir>
 #include <QFileInfo>
 #include <QImageReader>
@@ -864,7 +864,7 @@ void MainWindow::loadStyleSheet()
     
     if (styleFile.open(QFile::ReadOnly | QFile::Text)) {
         QString styleSheet = QLatin1String(styleFile.readAll());
-        qApp->setStyleSheet(styleSheet);
+        QApplication::instance()->setStyleSheet(styleSheet);
         styleFile.close();
         qDebug() << "Modern stylesheet loaded successfully";
     } else {
