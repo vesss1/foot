@@ -1,11 +1,71 @@
+"""
+===============================================================================
+TEAM ASSIGNER MODULE
+===============================================================================
+
+This module classifies players into teams based on jersey colors using
+K-means clustering. It's a critical component for team-based statistics
+like possession percentages.
+
+ALGORITHM:
+1. Extract player jersey region (top half of bounding box)
+2. Apply K-means clustering to separate jersey color from background
+3. Identify jersey cluster by excluding corner pixels (likely background)
+4. Collect jersey colors from all players in first frame
+5. Cluster all jersey colors into 2 teams using K-means
+6. Assign each player to nearest team cluster by color similarity
+
+KEY ASSUMPTIONS:
+- Two distinct team jersey colors
+- Top half of player bbox contains jersey
+- Corners of player bbox are background (not jersey)
+- Jersey colors remain consistent throughout video
+
+USAGE:
+1. Initialize TeamAssigner
+2. Call assign_team_color() on first frame with all players
+3. Call get_player_team() for each player in each frame
+4. Team assignments (1 or 2) are cached for consistent tracking
+===============================================================================
+"""
+
 from sklearn.cluster import KMeans
 
+
+################################################################################
+# TEAM ASSIGNER CLASS
+################################################################################
+
 class TeamAssigner:
+    """
+    Assigns players to teams based on jersey color clustering.
+    
+    Uses K-means clustering to automatically identify two teams
+    without manual color specification.
+    """
+    
     def __init__(self):
-        self.team_colors = {}
-        self.player_team_dict = {}
+        """Initialize team assigner with empty color and assignment dictionaries."""
+        self.team_colors = {}           # Maps team_id -> RGB color
+        self.player_team_dict = {}      # Caches player_id -> team_id assignments
+    
+    # =========================================================================
+    # COLOR EXTRACTION
+    # =========================================================================
     
     def get_clustering_model(self,image):
+        """
+        Create K-means model to separate jersey from background.
+        
+        Clusters pixels into 2 groups (jersey vs background) to isolate
+        the dominant jersey color.
+        
+        Args:
+            image: Player image crop (numpy array)
+            
+        Returns:
+            Fitted KMeans model with 2 clusters
+        """
         # Reshape the image to 2D array
         image_2d = image.reshape(-1,3)
 
@@ -16,6 +76,23 @@ class TeamAssigner:
         return kmeans
 
     def get_player_color(self,frame,bbox):
+        """
+        Extract the dominant jersey color for a player.
+        
+        PROCESS:
+        1. Crop to player bounding box
+        2. Take top half (where jersey is visible)
+        3. Cluster pixels into jersey vs background
+        4. Identify jersey cluster (not in corners)
+        5. Return jersey cluster center color
+        
+        Args:
+            frame: Video frame
+            bbox: Player bounding box [x1, y1, x2, y2]
+            
+        Returns:
+            RGB color array representing jersey color
+        """
         image = frame[int(bbox[1]):int(bbox[3]),int(bbox[0]):int(bbox[2])]
 
         top_half_image = image[0:int(image.shape[0]/2),:]
@@ -39,7 +116,21 @@ class TeamAssigner:
         return player_color
 
 
+    # =========================================================================
+    # TEAM ASSIGNMENT
+    # =========================================================================
+
     def assign_team_color(self,frame, player_detections):
+        """
+        Determine team colors by clustering all player jersey colors.
+        
+        Called once on the first frame to establish team color references.
+        Extracts jersey color from each player and clusters into 2 teams.
+        
+        Args:
+            frame: First video frame
+            player_detections: Dictionary of player detections {player_id: {bbox: [...]}}
+        """
         
         player_colors = []
         for _, player_detection in player_detections.items():
@@ -57,6 +148,20 @@ class TeamAssigner:
 
 
     def get_player_team(self,frame,player_bbox,player_id):
+        """
+        Determine which team a player belongs to based on jersey color.
+        
+        Uses cached assignment if available, otherwise compares jersey color
+        to established team colors and assigns to nearest team.
+        
+        Args:
+            frame: Current video frame
+            player_bbox: Player bounding box [x1, y1, x2, y2]
+            player_id: Unique player tracking ID
+            
+        Returns:
+            Team ID (1 or 2)
+        """
         if player_id in self.player_team_dict:
             return self.player_team_dict[player_id]
 

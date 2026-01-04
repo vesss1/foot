@@ -1,3 +1,31 @@
+"""
+===============================================================================
+DATA OUTPUT UTILITIES
+===============================================================================
+
+This module handles exporting analysis results to structured data formats
+(JSON and CSV) for easy consumption by the GUI and external tools.
+
+OUTPUT STRUCTURE:
+JSON and CSV files contain:
+- Player statistics (distance traveled per player)
+- Team organization (players grouped by team)
+- Possession statistics (percentage of ball control per team)
+
+DATA FORMATS:
+1. JSON: Hierarchical structure with summary and per-team player data
+2. CSV: Tabular format with columns: Team, Player ID, Distance
+
+FILES GENERATED:
+- data_output.json: Complete analysis data in JSON format
+- data_output.csv: Simplified table for spreadsheet applications
+
+USAGE:
+Called at the end of the analysis pipeline to save all computed metrics.
+The GUI automatically loads these files to display results in the interface.
+===============================================================================
+"""
+
 import json
 import csv
 import os

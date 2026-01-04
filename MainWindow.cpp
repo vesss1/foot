@@ -1,3 +1,22 @@
+/*******************************************************************************
+ * MAIN WINDOW IMPLEMENTATION
+ * 
+ * This file implements the Football Analysis GUI main window, providing:
+ * - User interface for video analysis configuration
+ * - Asynchronous Python process execution and monitoring
+ * - Real-time progress updates and log display
+ * - Automatic result loading (CSV/JSON data, annotated video)
+ * - Embedded video player with playback controls
+ * 
+ * EXECUTION FLOW:
+ * 1. User selects input video and YOLO model via file browsers
+ * 2. User clicks "Start Analysis" button
+ * 3. QProcess launches Python script (main.py) with arguments
+ * 4. GUI captures stdout/stderr in real-time, remains responsive
+ * 5. On completion, results are automatically loaded and displayed
+ * 6. User views data in table and plays annotated video
+ ******************************************************************************/
+
 #include "MainWindow.h"
 #include <QApplication>
 #include <QDir>
@@ -12,6 +31,14 @@
 #include <QFile>
 #include <QTextStream>
 
+/******************************************************************************
+ * CONSTRUCTOR
+ * 
+ * Initializes the main window and all member variables.
+ * Sets up the UI, loads stylesheets, and configures window properties.
+ * 
+ * All pointers are initialized to nullptr for safe destruction.
+ ******************************************************************************/
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , centralWidget(nullptr)
@@ -41,19 +68,24 @@ MainWindow::MainWindow(QWidget *parent)
     , pythonProcess(nullptr)
     , analysisRunning(false)
 {
-    // Load and apply modern QSS stylesheet
+    // Load and apply modern QSS stylesheet for professional appearance
     loadStyleSheet();
     
+    // Construct the entire UI (widgets, layouts, connections)
     setupUI();
     setWindowTitle("Foot Analysis GUI");
     
-    // Set reasonable minimum size for window
+    // Configure window sizing for optimal user experience
     setMinimumSize(900, 700);  // Minimum: 900x700 for usability
-    
-    // Set default size
-    resize(1200, 900);
+    resize(1200, 900);         // Default: 1200x900 for comfortable viewing
 }
 
+/******************************************************************************
+ * DESTRUCTOR
+ * 
+ * Cleans up resources and ensures Python process is terminated.
+ * Stops video playback and kills any running analysis process.
+ ******************************************************************************/
 MainWindow::~MainWindow()
 {
     if (mediaPlayer) {
@@ -72,6 +104,18 @@ MainWindow::~MainWindow()
     }
 }
 
+/******************************************************************************
+ * UTILITY METHOD: Get Project Root Path
+ * 
+ * Locates the project root directory by searching upward from the executable
+ * location. The project root is identified by the presence of both
+ * FootAnalysisGUI.pro and foot-Function directory.
+ * 
+ * This enables the application to work correctly regardless of where the
+ * executable is located (build directory, installed location, etc.).
+ * 
+ * RETURN: Absolute path to project root directory
+ ******************************************************************************/
 QString MainWindow::getProjectRootPath() const
 {
     // Get the directory containing the executable
@@ -100,6 +144,23 @@ QString MainWindow::getProjectRootPath() const
     return exeDir;
 }
 
+/******************************************************************************
+ * UI SETUP METHOD: Construct User Interface
+ * 
+ * Builds the complete UI hierarchy using Qt layouts and widgets.
+ * The layout uses a two-panel design:
+ * 
+ * LEFT SIDEBAR (fixed width ~320px):
+ *   - Input Configuration: Video and model file selection
+ *   - Analysis Control: Start button
+ *   - Status/Progress: Real-time updates, elapsed time, progress bar
+ * 
+ * RIGHT MAIN AREA (expandable):
+ *   - Analysis Log: Live stdout/stderr from Python process
+ *   - Results Tabs: Summary, Data Table (CSV/JSON), Video Output
+ * 
+ * All signal/slot connections are established here to wire up event handlers.
+ ******************************************************************************/
 void MainWindow::setupUI()
 {
     // Create main splitter for dashboard layout
@@ -390,6 +451,13 @@ void MainWindow::setupUI()
     connect(stopButton, &QPushButton::clicked, this, &MainWindow::onStopVideo);
 }
 
+/******************************************************************************
+ * EVENT HANDLER: Browse Input Video
+ * 
+ * Opens a file dialog for the user to select an input video file.
+ * Supports common video formats (MP4, AVI, MOV, MKV).
+ * Updates the input path text field with the selected file path.
+ ******************************************************************************/
 void MainWindow::onBrowseInputVideo()
 {
     QString fileName = QFileDialog::getOpenFileName(
@@ -404,6 +472,13 @@ void MainWindow::onBrowseInputVideo()
     }
 }
 
+/******************************************************************************
+ * EVENT HANDLER: Browse Model
+ * 
+ * Opens a file dialog for the user to select a YOLO model file.
+ * Supports PyTorch model formats (.pt, .pth).
+ * Updates the model path text field with the selected file path.
+ ******************************************************************************/
 void MainWindow::onBrowseModel()
 {
     QString fileName = QFileDialog::getOpenFileName(
@@ -418,6 +493,29 @@ void MainWindow::onBrowseModel()
     }
 }
 
+/******************************************************************************
+ * EVENT HANDLER: Start Analysis
+ * 
+ * Launches the Python video analysis pipeline as a separate process.
+ * 
+ * VALIDATION:
+ * - Checks that analysis is not already running
+ * - Validates input video and model paths are provided
+ * - Verifies files exist before starting
+ * 
+ * PROCESS EXECUTION:
+ * - Clears previous results from UI
+ * - Constructs command-line arguments for Python script
+ * - Changes working directory to foot-Function
+ * - Starts QProcess to run Python main.py asynchronously
+ * - Connects process signals for real-time monitoring
+ * 
+ * UI UPDATES:
+ * - Disables start button during analysis
+ * - Starts elapsed time counter
+ * - Updates status label to "Running"
+ * - Displays initial log message
+ ******************************************************************************/
 void MainWindow::onStartAnalysis()
 {
     if (analysisRunning) {
@@ -519,6 +617,15 @@ void MainWindow::onStartAnalysis()
     outputTextEdit->append(QString("Command: python %1\n").arg(arguments.join(" ")));
 }
 
+/******************************************************************************
+ * EVENT HANDLER: Process Ready Read Standard Output
+ * 
+ * Called automatically when Python process writes to stdout.
+ * Captures output in real-time and displays in the analysis log.
+ * Auto-scrolls to bottom to show latest output.
+ * 
+ * This provides live feedback to the user during analysis.
+ ******************************************************************************/
 void MainWindow::onProcessReadyReadStandardOutput()
 {
     if (pythonProcess) {
@@ -533,6 +640,15 @@ void MainWindow::onProcessReadyReadStandardOutput()
     }
 }
 
+/******************************************************************************
+ * EVENT HANDLER: Process Ready Read Standard Error
+ * 
+ * Called automatically when Python process writes to stderr.
+ * Captures error output in real-time and displays in red in the analysis log.
+ * Auto-scrolls to bottom to show latest output.
+ * 
+ * This helps users identify problems during analysis.
+ ******************************************************************************/
 void MainWindow::onProcessReadyReadStandardError()
 {
     if (pythonProcess) {
@@ -547,6 +663,26 @@ void MainWindow::onProcessReadyReadStandardError()
     }
 }
 
+/******************************************************************************
+ * EVENT HANDLER: Process Finished
+ * 
+ * Called when Python analysis process completes (success or failure).
+ * 
+ * COMPLETION HANDLING:
+ * - Stops elapsed time counter and progress indicators
+ * - Re-enables start button for next analysis
+ * - Updates status label based on exit code
+ * 
+ * RESULT LOADING (on success):
+ * - Searches for output files in foot-Function/output_videos/
+ * - Loads CSV data into table widget (or JSON as fallback)
+ * - Loads output video into media player
+ * - Switches to Data Table tab to show results
+ * 
+ * ERROR HANDLING (on failure):
+ * - Displays error status
+ * - Shows detailed error message in log
+ ******************************************************************************/
 void MainWindow::onProcessFinished(int exitCode, QProcess::ExitStatus exitStatus)
 {
     analysisRunning = false;
@@ -639,6 +775,17 @@ QString MainWindow::findOutputVideo()
     return QString();
 }
 
+/******************************************************************************
+ * LEGACY METHOD: Display Result Media
+ * 
+ * Legacy method for displaying result files (images or video paths).
+ * 
+ * For video files: Displays path information as text
+ * For image files: Loads and displays the image with scaling
+ * 
+ * NOTE: This method is largely superseded by the dedicated video player
+ * and data table display methods, but maintained for compatibility.
+ ******************************************************************************/
 void MainWindow::displayResultMedia(const QString &mediaPath)
 {
     if (mediaPath.isEmpty() || !QFileInfo::exists(mediaPath)) {
@@ -691,6 +838,26 @@ void MainWindow::displayResultMedia(const QString &mediaPath)
     );
 }
 
+/******************************************************************************
+ * DATA LOADING METHOD: Load and Display CSV
+ * 
+ * Parses CSV output file and displays data in a table widget.
+ * 
+ * CSV FORMAT EXPECTED:
+ * - Header row with column names
+ * - Data rows with player statistics and team possession
+ * 
+ * PARSING LOGIC:
+ * - Reads CSV line by line
+ * - Splits on commas to extract cell values
+ * - Handles quoted fields (for commas within values)
+ * - Populates QTableWidget with parsed data
+ * 
+ * UI UPDATES:
+ * - Configures table columns based on CSV header
+ * - Fills rows with player/team data
+ * - Enables sorting and selection
+ ******************************************************************************/
 void MainWindow::loadAndDisplayCSV(const QString &csvPath)
 {
     QFile file(csvPath);
@@ -739,6 +906,23 @@ void MainWindow::loadAndDisplayCSV(const QString &csvPath)
     resultsTabWidget->setCurrentWidget(dataTab);
 }
 
+/******************************************************************************
+ * DATA LOADING METHOD: Load and Display JSON
+ * 
+ * Parses JSON output file and displays data in a table widget.
+ * Used as a fallback when CSV is not available.
+ * 
+ * JSON FORMAT EXPECTED:
+ * - Root object containing player data and team statistics
+ * - Flexible structure with nested objects/arrays
+ * 
+ * PARSING LOGIC:
+ * - Uses QJsonDocument to parse JSON
+ * - Extracts player statistics and team possession data
+ * - Converts JSON structure to tabular format
+ * 
+ * This method provides an alternative data view when CSV parsing fails.
+ ******************************************************************************/
 void MainWindow::loadAndDisplayJSON(const QString &jsonPath)
 {
     QFile file(jsonPath);
@@ -829,6 +1013,23 @@ void MainWindow::loadAndDisplayJSON(const QString &jsonPath)
     resultsTabWidget->setCurrentWidget(dataTab);
 }
 
+/******************************************************************************
+ * VIDEO LOADING METHOD: Load and Play Video
+ * 
+ * Loads the annotated output video into the Qt Multimedia player.
+ * 
+ * FUNCTIONALITY:
+ * - Validates video file exists
+ * - Sets video source in QMediaPlayer
+ * - Enables playback control buttons
+ * - Switches to video output tab
+ * 
+ * The video typically contains:
+ * - Player bounding boxes with team colors
+ * - Ball tracking overlays
+ * - Speed and distance metrics
+ * - Possession indicators
+ ******************************************************************************/
 void MainWindow::loadAndPlayVideo(const QString &videoPath)
 {
     if (!QFileInfo::exists(videoPath)) {
@@ -844,6 +1045,12 @@ void MainWindow::loadAndPlayVideo(const QString &videoPath)
     resultsTabWidget->setCurrentWidget(videoTab);
 }
 
+/******************************************************************************
+ * EVENT HANDLER: Play/Pause Video
+ * 
+ * Toggles video playback between play and pause states.
+ * Updates button text to reflect current state.
+ ******************************************************************************/
 void MainWindow::onPlayPauseVideo()
 {
     if (mediaPlayer->playbackState() == QMediaPlayer::PlayingState) {
@@ -855,12 +1062,25 @@ void MainWindow::onPlayPauseVideo()
     }
 }
 
+/******************************************************************************
+ * EVENT HANDLER: Stop Video
+ * 
+ * Stops video playback and resets to the beginning.
+ * Updates button text to "Play" state.
+ ******************************************************************************/
 void MainWindow::onStopVideo()
 {
     mediaPlayer->stop();
     playPauseButton->setText("Play");
 }
 
+/******************************************************************************
+ * TIMER CALLBACK: Update Elapsed Time
+ * 
+ * Called every second by QTimer to update the elapsed time display.
+ * Formats time as "M:SS" for readability.
+ * Continues until analysis completes.
+ ******************************************************************************/
 void MainWindow::updateElapsedTime()
 {
     if (elapsedTimer->isValid()) {
@@ -876,6 +1096,20 @@ void MainWindow::updateElapsedTime()
     }
 }
 
+/******************************************************************************
+ * UI SETUP METHOD: Load Stylesheet
+ * 
+ * Loads and applies a QSS (Qt Style Sheet) for modern, professional styling.
+ * Reads from modern_style.qss file in the project root.
+ * 
+ * The stylesheet provides:
+ * - Card-based UI design with shadows and borders
+ * - Color-coded status indicators
+ * - Consistent spacing and typography
+ * - Professional color scheme
+ * 
+ * Gracefully handles missing stylesheet file.
+ ******************************************************************************/
 void MainWindow::loadStyleSheet()
 {
     QFile styleFile(":/modern_style.qss");

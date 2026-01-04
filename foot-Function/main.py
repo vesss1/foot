@@ -1,7 +1,40 @@
 #!/usr/bin/env python3
 """
-Football Analysis - Main Pipeline
-Robust, production-safe video analysis with comprehensive error handling.
+===============================================================================
+FOOTBALL ANALYSIS - MAIN PIPELINE
+===============================================================================
+
+This is the main entry point for the football video analysis system.
+It orchestrates the entire analysis pipeline from video input to annotated
+output with player tracking, team classification, and performance metrics.
+
+EXECUTION FLOW:
+1. Load video and YOLO model
+2. Detect and track players, referees, and ball (YOLO + ByteTrack)
+3. Assign players to teams using K-means clustering on jersey colors
+4. Estimate camera movement using optical flow
+5. Transform perspective for accurate distance measurement
+6. Calculate player speeds and distances traveled
+7. Determine ball possession for each team
+8. Annotate video with bounding boxes, labels, and statistics
+9. Export results as video (AVI), CSV, and JSON
+
+IMPORTS:
+- utils: Video I/O, bounding box utilities, data output
+- trackers: YOLO-based object detection and tracking
+- team_assigner: K-means clustering for team identification
+- player_ball_assigner: Ball possession detection
+- camera_movement_estimator: Optical flow for camera motion
+- view_transformer: Perspective transformation
+- speed_and_distance_estimator: Metric calculations
+
+USAGE:
+Called by Qt GUI via QProcess:
+    python main.py --input <video_path> --model <model_path>
+
+Or directly from command line:
+    python main.py --input input_videos/match.mp4 --model models/best.pt
+===============================================================================
 """
 
 import os
@@ -14,6 +47,7 @@ from typing import Optional, List, Dict, Any
 import cv2
 import numpy as np
 
+# Import custom modules for video analysis pipeline
 from utils import read_video, save_video, output_data
 from trackers import Tracker
 from team_assigner import TeamAssigner
@@ -22,7 +56,7 @@ from camera_movement_estimator import CameraMovementEstimator
 from view_transformer import ViewTransformer
 from speed_and_distance_estimator import SpeedAndDistance_Estimator
 
-# Configure logging
+# Configure logging for pipeline monitoring
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -30,8 +64,18 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+################################################################################
+# VIDEO ANALYSIS PIPELINE CLASS
+################################################################################
+
 class VideoAnalysisPipeline:
-    """Production-safe video analysis pipeline with fail-fast error handling."""
+    """
+    Production-safe video analysis pipeline with comprehensive error handling.
+    
+    This class encapsulates the entire football video analysis workflow,
+    coordinating multiple computer vision and machine learning components
+    to produce annotated videos and statistical outputs.
+    """
     
     def __init__(self, 
                  input_video_path: str,
@@ -106,8 +150,17 @@ class VideoAnalysisPipeline:
         except Exception as e:
             raise RuntimeError(f"Failed to read video: {e}")
     
+    # =========================================================================
+    # COMPONENT INITIALIZATION
+    # =========================================================================
+    
     def _initialize_tracker(self) -> Tracker:
-        """Initialize object tracker with error handling."""
+        """
+        Initialize YOLO-based object tracker.
+        
+        Loads the YOLO model and sets up ByteTrack for object tracking.
+        The tracker will detect players, referees, goalkeepers, and the ball.
+        """
         try:
             logger.info("Initializing tracker")
             tracker = Tracker(self.model_path)
@@ -115,9 +168,22 @@ class VideoAnalysisPipeline:
         except Exception as e:
             raise RuntimeError(f"Failed to initialize tracker: {e}")
     
+    # =========================================================================
+    # DETECTION AND TRACKING
+    # =========================================================================
+    
     def _get_object_tracks(self, 
                           tracker: Tracker, 
                           frames: List[np.ndarray]) -> Dict[str, Any]:
+        """
+        Detect and track all objects (players, referees, ball) across frames.
+        
+        Uses YOLO for detection and ByteTrack for multi-object tracking.
+        Supports stub caching for faster repeated runs on the same video.
+        
+        Returns: Dictionary with keys 'players', 'referees', 'ball'
+                 Each containing frame-by-frame tracking data
+        """
         """Get object tracks with stub support."""
         try:
             stub_path = 'stubs/track_stubs.pkl' if self.use_stubs else None
@@ -137,9 +203,22 @@ class VideoAnalysisPipeline:
         except Exception as e:
             raise RuntimeError(f"Failed to get object tracks: {e}")
     
+    # =========================================================================
+    # CAMERA MOVEMENT COMPENSATION
+    # =========================================================================
+    
     def _process_camera_movement(self,
                                  frames: List[np.ndarray],
                                  tracks: Dict[str, Any]) -> List[np.ndarray]:
+        """
+        Estimate and compensate for camera movement using optical flow.
+        
+        Tracks feature points in the video to detect camera pan, tilt, and zoom.
+        Adjusts all object positions to account for camera movement, enabling
+        accurate speed and distance calculations.
+        
+        Returns: Camera movement per frame as [dx, dy] arrays
+        """
         """Process camera movement estimation."""
         try:
             logger.info("Processing camera movement")
@@ -160,7 +239,17 @@ class VideoAnalysisPipeline:
         except Exception as e:
             raise RuntimeError(f"Failed to process camera movement: {e}")
     
+    # =========================================================================
+    # PERSPECTIVE TRANSFORMATION
+    # =========================================================================
+    
     def _process_view_transformation(self, tracks: Dict[str, Any]) -> None:
+        """
+        Apply perspective transformation to convert pixel coordinates to real-world coordinates.
+        
+        Maps 2D video coordinates to a top-down field view, enabling accurate
+        distance measurements in meters. Essential for speed and distance calculations.
+        """
         """Apply view transformation to tracks."""
         try:
             logger.info("Applying view transformation")
@@ -170,9 +259,20 @@ class VideoAnalysisPipeline:
         except Exception as e:
             raise RuntimeError(f"Failed to apply view transformation: {e}")
     
+    # =========================================================================
+    # BALL TRACKING ENHANCEMENT
+    # =========================================================================
+    
     def _interpolate_ball_positions(self, 
                                     tracker: Tracker,
                                     tracks: Dict[str, Any]) -> None:
+        """
+        Fill in missing ball detections using interpolation.
+        
+        Ball detection can be intermittent due to occlusion or motion blur.
+        This method uses interpolation to estimate ball positions in frames
+        where detection failed, creating smooth ball trajectories.
+        """
         """Interpolate ball positions."""
         try:
             logger.info("Interpolating ball positions")
@@ -181,7 +281,20 @@ class VideoAnalysisPipeline:
         except Exception as e:
             raise RuntimeError(f"Failed to interpolate ball positions: {e}")
     
+    # =========================================================================
+    # PERFORMANCE METRICS
+    # =========================================================================
+    
     def _estimate_speed_and_distance(self, tracks: Dict[str, Any]) -> None:
+        """
+        Calculate player speed and distance traveled.
+        
+        Uses transformed positions and frame rate to compute:
+        - Speed in km/h for each player per frame
+        - Total distance covered in meters for each player
+        
+        These metrics are added to the tracks dictionary and displayed in output.
+        """
         """Calculate speed and distance metrics."""
         try:
             logger.info("Calculating speed and distance")
@@ -191,9 +304,22 @@ class VideoAnalysisPipeline:
         except Exception as e:
             raise RuntimeError(f"Failed to calculate speed and distance: {e}")
     
+    # =========================================================================
+    # TEAM ASSIGNMENT
+    # =========================================================================
+    
     def _assign_teams(self, 
                      frames: List[np.ndarray],
                      tracks: Dict[str, Any]) -> TeamAssigner:
+        """
+        Classify players into teams based on jersey colors.
+        
+        Uses K-means clustering on player jersey colors to identify two teams.
+        Analyzes the top half of player bounding boxes (where jerseys are visible)
+        to extract dominant colors and assign team membership.
+        
+        Returns: TeamAssigner instance with team color assignments
+        """
         """Assign players to teams."""
         try:
             logger.info("Assigning player teams")
