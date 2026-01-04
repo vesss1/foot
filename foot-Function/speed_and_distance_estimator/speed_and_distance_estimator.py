@@ -1,14 +1,87 @@
+"""
+===============================================================================
+SPEED AND DISTANCE ESTIMATOR MODULE
+===============================================================================
+
+This module calculates player speed and distance traveled using transformed
+field coordinates. It's the final step in converting pixel-based tracking
+data into meaningful real-world performance metrics.
+
+METRICS CALCULATED:
+1. Speed: Instantaneous speed in km/h for each player per frame
+2. Distance: Cumulative distance traveled in meters for each player
+
+CALCULATION METHOD:
+- Uses frame windows (5 frames) to reduce noise
+- Measures distance between positions in transformed coordinates (meters)
+- Divides by elapsed time to get speed
+- Accumulates distance across all frames
+
+FRAME WINDOW:
+Using a 5-frame window (instead of frame-to-frame) provides more stable
+speed measurements by averaging over short time periods and reducing
+impact of tracking jitter.
+
+CONVERSIONS:
+- Frame rate: 24 fps (assumed)
+- Speed: meters/second → km/h (multiply by 3.6)
+- Distance: accumulated in meters
+
+OUTPUT:
+Both metrics are added to the tracking dictionary and displayed as
+annotations on the video output.
+===============================================================================
+"""
+
 import cv2
 import sys 
 sys.path.append('../')
 from utils import measure_distance ,get_foot_position
 
+
+################################################################################
+# SPEED AND DISTANCE ESTIMATOR CLASS
+################################################################################
+
 class SpeedAndDistance_Estimator():
+    """
+    Calculates player speed and distance from transformed coordinates.
+    """
+    
     def __init__(self):
-        self.frame_window=5
-        self.frame_rate=24
+        """
+        Initialize estimator with frame window and frame rate settings.
+        """
+        self.frame_window=5   # Number of frames for speed calculation window
+        self.frame_rate=24    # Assumed video frame rate (fps)
+    
+    # =========================================================================
+    # METRIC CALCULATION
+    # =========================================================================
     
     def add_speed_and_distance_to_tracks(self,tracks):
+        """
+        Calculate and add speed and distance metrics to all player tracks.
+        
+        PROCESS:
+        1. Skip ball and referees (only calculate for players)
+        2. Process frames in windows of 5 frames
+        3. For each player in window:
+           - Get start and end positions (transformed coordinates in meters)
+           - Calculate distance traveled using Euclidean distance
+           - Calculate time elapsed based on frame rate
+           - Compute speed = distance / time
+           - Accumulate total distance
+        4. Assign speed and distance to all frames in the window
+        
+        NOTES:
+        - Only calculates for players with valid transformed positions
+        - Skips players that disappear mid-window (lost tracking)
+        - Speed is constant within each 5-frame window
+        
+        Args:
+            tracks: Complete tracking dictionary for all objects
+        """
         total_distance= {}
 
         for object, object_tracks in tracks.items():
@@ -47,7 +120,27 @@ class SpeedAndDistance_Estimator():
                         tracks[object][frame_num_batch][track_id]['speed'] = speed_km_per_hour
                         tracks[object][frame_num_batch][track_id]['distance'] = total_distance[object][track_id]
     
+    # =========================================================================
+    # VISUALIZATION
+    # =========================================================================
+    
     def draw_speed_and_distance(self,frames,tracks):
+        """
+        Annotate video frames with speed and distance information.
+        
+        Draws text overlays showing:
+        - Current speed in km/h
+        - Total distance traveled in meters
+        
+        Text is positioned near player's feet for clear association.
+        
+        Args:
+            frames: List of video frames
+            tracks: Tracking dictionary with speed/distance data
+            
+        Returns:
+            List of annotated frames
+        """
         output_frames = []
         for frame_num, frame in enumerate(frames):
             for object, object_tracks in tracks.items():
