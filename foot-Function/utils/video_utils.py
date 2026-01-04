@@ -1,3 +1,31 @@
+"""
+===============================================================================
+VIDEO I/O UTILITIES
+===============================================================================
+
+This module handles video input/output operations with comprehensive
+error handling and validation.
+
+FUNCTIONS:
+- read_video: Load video frames from file into memory
+- save_video: Write processed frames to video file
+
+ERROR HANDLING:
+Both functions include extensive validation and error checking to ensure
+robust operation in production environments. They handle:
+- File existence and accessibility
+- Invalid video formats or corrupted files
+- Empty frame sequences
+- Inconsistent frame dimensions
+- Codec compatibility issues
+- Disk space and write permissions
+
+USAGE:
+Called by main pipeline to load input video and save annotated output.
+All errors are raised as exceptions with descriptive messages for debugging.
+===============================================================================
+"""
+
 import cv2
 import os
 import logging
