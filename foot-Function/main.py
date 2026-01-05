@@ -183,7 +183,6 @@ class VideoAnalysisPipeline:
         返回：包含鍵值 'players'、'referees'、'ball' 的字典
              每個鍵包含逐幀的追蹤資料
         """
-        """獲取支援存根的物件追蹤。"""
         try:
             stub_path = 'stubs/track_stubs.pkl' if self.use_stubs else None
             logger.info("Getting object tracks")
@@ -218,7 +217,6 @@ class VideoAnalysisPipeline:
         
         返回：每幀的相機移動作為 [dx, dy] 陣列
         """
-        """處理相機移動估計。"""
         try:
             logger.info("Processing camera movement")
             
@@ -249,7 +247,6 @@ class VideoAnalysisPipeline:
         將 2D 影片座標映射到俯視場地視圖，實現準確的
         距離測量（以公尺為單位）。對於速度和距離計算至關重要。
         """
-        """將視圖轉換應用於追蹤。"""
         try:
             logger.info("Applying view transformation")
             transformer = ViewTransformer()
@@ -272,7 +269,6 @@ class VideoAnalysisPipeline:
         此方法使用插值來估計偵測失敗的幀中的球位置，
         創建流暢的球軌跡。
         """
-        """插值球位置。"""
         try:
             logger.info("Interpolating ball positions")
             tracks["ball"] = tracker.interpolate_ball_positions(tracks["ball"])
@@ -294,7 +290,6 @@ class VideoAnalysisPipeline:
         
         這些指標會新增到追蹤字典中並顯示在輸出中。
         """
-        """計算速度和距離指標。"""
         try:
             logger.info("Calculating speed and distance")
             estimator = SpeedAndDistance_Estimator()
@@ -319,7 +314,6 @@ class VideoAnalysisPipeline:
         
         返回：具有隊伍顏色分配的 TeamAssigner 實例
         """
-        """將球員分配到隊伍。"""
         try:
             logger.info("Assigning player teams")
             
