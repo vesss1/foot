@@ -1,20 +1,20 @@
 /*******************************************************************************
- * MAIN WINDOW IMPLEMENTATION
+ * 主窗口实现
  * 
- * This file implements the Football Analysis GUI main window, providing:
- * - User interface for video analysis configuration
- * - Asynchronous Python process execution and monitoring
- * - Real-time progress updates and log display
- * - Automatic result loading (CSV/JSON data, annotated video)
- * - Embedded video player with playback controls
+ * 本文件实现足球分析GUI主窗口，提供以下功能：
+ * - 视频分析配置的用户界面
+ * - 异步Python进程执行和监控
+ * - 实时进度更新和日志显示
+ * - 自动结果加载（CSV/JSON数据、标注视频）
+ * - 嵌入式视频播放器和播放控制
  * 
- * EXECUTION FLOW:
- * 1. User selects input video and YOLO model via file browsers
- * 2. User clicks "Start Analysis" button
- * 3. QProcess launches Python script (main.py) with arguments
- * 4. GUI captures stdout/stderr in real-time, remains responsive
- * 5. On completion, results are automatically loaded and displayed
- * 6. User views data in table and plays annotated video
+ * 执行流程：
+ * 1. 用户通过文件浏览器选择输入视频和YOLO模型
+ * 2. 用户点击"开始分析"按钮
+ * 3. QProcess启动Python脚本（main.py）并传入参数
+ * 4. GUI实时捕获stdout/stderr，保持响应
+ * 5. 完成后，自动加载并显示结果
+ * 6. 用户在表格中查看数据并播放标注视频
  ******************************************************************************/
 
 #include "MainWindow.h"
@@ -32,12 +32,12 @@
 #include <QTextStream>
 
 /******************************************************************************
- * CONSTRUCTOR
+ * 构造函数
  * 
- * Initializes the main window and all member variables.
- * Sets up the UI, loads stylesheets, and configures window properties.
+ * 初始化主窗口和所有成员变量。
+ * 设置UI、加载样式表并配置窗口属性。
  * 
- * All pointers are initialized to nullptr for safe destruction.
+ * 所有指针初始化为nullptr以确保安全析构。
  ******************************************************************************/
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -68,23 +68,23 @@ MainWindow::MainWindow(QWidget *parent)
     , pythonProcess(nullptr)
     , analysisRunning(false)
 {
-    // Load and apply modern QSS stylesheet for professional appearance
+    // 加载并应用现代QSS样式表以获得专业外观
     loadStyleSheet();
     
-    // Construct the entire UI (widgets, layouts, connections)
+    // 构建整个UI（部件、布局、连接）
     setupUI();
     setWindowTitle("Foot Analysis GUI");
     
-    // Configure window sizing for optimal user experience
-    setMinimumSize(900, 700);  // Minimum: 900x700 for usability
-    resize(1200, 900);         // Default: 1200x900 for comfortable viewing
+    // 配置窗口大小以获得最佳用户体验
+    setMinimumSize(900, 700);  // 最小尺寸：900x700以确保可用性
+    resize(1200, 900);         // 默认尺寸：1200x900以舒适查看
 }
 
 /******************************************************************************
- * DESTRUCTOR
+ * 析构函数
  * 
- * Cleans up resources and ensures Python process is terminated.
- * Stops video playback and kills any running analysis process.
+ * 清理资源并确保Python进程终止。
+ * 停止视频播放并终止任何正在运行的分析进程。
  ******************************************************************************/
 MainWindow::~MainWindow()
 {
@@ -105,70 +105,69 @@ MainWindow::~MainWindow()
 }
 
 /******************************************************************************
- * UTILITY METHOD: Get Project Root Path
+ * 实用方法：获取项目根路径
  * 
- * Locates the project root directory by searching upward from the executable
- * location. The project root is identified by the presence of both
- * FootAnalysisGUI.pro and foot-Function directory.
+ * 通过从可执行文件位置向上搜索来定位项目根目录。
+ * 项目根目录通过同时存在FootAnalysisGUI.pro和foot-Function目录来识别。
  * 
- * This enables the application to work correctly regardless of where the
- * executable is located (build directory, installed location, etc.).
+ * 这使应用程序能够正确工作，无论可执行文件位于何处
+ * （构建目录、安装位置等）。
  * 
- * RETURN: Absolute path to project root directory
+ * 返回：项目根目录的绝对路径
  ******************************************************************************/
 QString MainWindow::getProjectRootPath() const
 {
-    // Get the directory containing the executable
+    // 获取包含可执行文件的目录
     QString exeDir = QCoreApplication::applicationDirPath();
     
-    // Search upward for the project root (where FootAnalysisGUI.pro and foot-Function exist)
+    // 向上搜索项目根目录（FootAnalysisGUI.pro和foot-Function所在位置）
     QDir dir(exeDir);
-    int maxLevelsUp = 5;  // Maximum levels to search upward
+    int maxLevelsUp = 5;  // 向上搜索的最大层级数
     
     for (int i = 0; i < maxLevelsUp; ++i) {
-        // Check if foot-Function directory exists here
+        // 检查foot-Function目录是否存在于此处
         if (dir.exists("foot-Function") && dir.exists("FootAnalysisGUI.pro")) {
             qDebug() << "Found project root at:" << dir.absolutePath();
             return dir.absolutePath();
         }
         
-        // Go up one level
+        // 向上移动一级
         if (!dir.cdUp()) {
-            break;  // Reached filesystem root
+            break;  // 已到达文件系统根目录
         }
     }
     
-    // Fallback: assume foot-Function is in the same directory as executable
-    // This handles the case where the exe is run from the project root
+    // 备用方案：假设foot-Function与可执行文件在同一目录
+    // 这处理可执行文件从项目根目录运行的情况
     qDebug() << "Could not find project root, using exe directory:" << exeDir;
     return exeDir;
 }
 
 /******************************************************************************
- * UI SETUP METHOD: Construct User Interface
+ * UI设置方法：构建用户界面
  * 
- * Builds the complete UI hierarchy using Qt layouts and widgets.
- * The layout uses a two-panel design:
+ * 使用Qt布局和部件构建完整的UI层次结构。
+ * 布局使用双面板设计：
  * 
- * LEFT SIDEBAR (fixed width ~320px):
- *   - Input Configuration: Video and model file selection
- *   - Analysis Control: Start button
- *   - Status/Progress: Real-time updates, elapsed time, progress bar
+ * 左侧边栏（固定宽度约320px）：
+ *   - 输入配置：视频和模型文件选择
+ *   - 分析控制：开始按钮
+ *   - 状态/进度：实时更新、已用时间、进度条
  * 
- * RIGHT MAIN AREA (expandable):
- *   - Analysis Log: Live stdout/stderr from Python process
- *   - Results Tabs: Summary, Data Table (CSV/JSON), Video Output
+ * 右侧主区域（可扩展）：
+ *   - 分析日志：来自Python进程的实时stdout/stderr
+ *   - 结果选项卡：摘要、数据表（CSV/JSON）、视频输出
  * 
- * All signal/slot connections are established here to wire up event handlers.
+ * 所有信号/槽连接都在此处建立以连接事件处理程序。
  ******************************************************************************/
 void MainWindow::setupUI()
 {
-    // Create main splitter for dashboard layout
+    // 创建仪表板布局的主分割器
     QSplitter *mainSplitter = new QSplitter(Qt::Horizontal, this);
     mainSplitter->setChildrenCollapsible(false);
     setCentralWidget(mainSplitter);
     
-    // ===== LEFT SIDEBAR (Fixed ~320px) =====
+    // ===== 左侧边栏（固定约320px） =====
     QWidget *leftSidebar = new QWidget(this);
     leftSidebar->setProperty("sidebar", true);
     leftSidebar->setMinimumWidth(280);
@@ -178,7 +177,7 @@ void MainWindow::setupUI()
     sidebarLayout->setSpacing(16);
     sidebarLayout->setContentsMargins(12, 12, 12, 12);
     
-    // Input Configuration Section
+    // 输入配置部分
     QGroupBox *inputGroup = new QGroupBox("Input Configuration", this);
     inputGroup->setProperty("sidebarCard", true);
     
@@ -186,7 +185,7 @@ void MainWindow::setupUI()
     inputLayout->setSpacing(12);
     inputLayout->setContentsMargins(16, 20, 16, 16);
     
-    // Video File
+    // 视频文件
     QLabel *videoLabel = new QLabel("Video File: <span style='color: red;'>*</span>", this);
     inputLayout->addWidget(videoLabel);
     
@@ -207,7 +206,7 @@ void MainWindow::setupUI()
     videoRowLayout->addWidget(browseInputButton, 0);
     inputLayout->addLayout(videoRowLayout);
     
-    // YOLO Model
+    // YOLO模型
     QLabel *modelLabel = new QLabel("YOLO Model: <span style='color: red;'>*</span>", this);
     inputLayout->addWidget(modelLabel);
     
@@ -230,7 +229,7 @@ void MainWindow::setupUI()
     
     sidebarLayout->addWidget(inputGroup);
     
-    // Analysis Control Section
+    // 分析控制部分
     QGroupBox *controlGroup = new QGroupBox("Analysis Control", this);
     controlGroup->setProperty("sidebarCard", true);
     
@@ -238,38 +237,38 @@ void MainWindow::setupUI()
     controlLayout->setSpacing(12);
     controlLayout->setContentsMargins(16, 20, 16, 16);
     
-    // Primary CTA - Start Analysis Button
+    // 主要行动号召 - 开始分析按钮
     startButton = new QPushButton("Start Analysis", this);
     startButton->setProperty("primary", true);
     startButton->setMinimumHeight(50);
     startButton->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     controlLayout->addWidget(startButton);
     
-    // Progress Bar (hidden initially)
+    // 进度条（初始隐藏）
     progressBar = new QProgressBar(this);
-    progressBar->setRange(0, 0);  // Indeterminate mode
+    progressBar->setRange(0, 0);  // 不确定模式
     progressBar->setTextVisible(false);
     progressBar->setMinimumHeight(20);
-    progressBar->setVisible(false);  // Hidden initially
+    progressBar->setVisible(false);  // 初始隐藏
     progressBar->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     controlLayout->addWidget(progressBar);
     
-    // Elapsed Time Label (hidden initially)
+    // 已用时间标签（初始隐藏）
     elapsedTimeLabel = new QLabel("Elapsed: 0:00", this);
     elapsedTimeLabel->setProperty("elapsedTime", true);
     elapsedTimeLabel->setAlignment(Qt::AlignCenter);
-    elapsedTimeLabel->setVisible(false);  // Hidden initially
+    elapsedTimeLabel->setVisible(false);  // 初始隐藏
     elapsedTimeLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     controlLayout->addWidget(elapsedTimeLabel);
     
     sidebarLayout->addWidget(controlGroup);
     
-    // Initialize timers
+    // 初始化定时器
     elapsedTimer = new QElapsedTimer();
     updateTimer = new QTimer(this);
     connect(updateTimer, &QTimer::timeout, this, &MainWindow::updateElapsedTime);
     
-    // Status/Progress Section
+    // 状态/进度部分
     QGroupBox *statusGroup = new QGroupBox("Status", this);
     statusGroup->setProperty("sidebarCard", true);
     
@@ -285,12 +284,12 @@ void MainWindow::setupUI()
     
     sidebarLayout->addWidget(statusGroup);
     
-    // Add stretch to push everything to the top
+    // 添加弹性空间以将所有内容推到顶部
     sidebarLayout->addStretch(1);
     
     mainSplitter->addWidget(leftSidebar);
     
-    // ===== RIGHT MAIN AREA (TabWidget) =====
+    // ===== 右侧主区域（选项卡部件） =====
     QWidget *mainArea = new QWidget(this);
     QVBoxLayout *mainAreaLayout = new QVBoxLayout(mainArea);
     mainAreaLayout->setSpacing(0);
@@ -299,7 +298,7 @@ void MainWindow::setupUI()
     resultsTabWidget = new QTabWidget(this);
     resultsTabWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     
-    // Tab 1: Summary (with empty state)
+    // 选项卡1：摘要（带空状态）
     QWidget *summaryTab = new QWidget();
     summaryTab->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     QVBoxLayout *summaryLayout = new QVBoxLayout(summaryTab);
@@ -331,7 +330,7 @@ void MainWindow::setupUI()
     summaryLayout->addWidget(resultScrollArea);
     resultsTabWidget->addTab(summaryTab, "Summary");
     
-    // Tab 2: Data Table
+    // 选项卡2：数据表
     dataTab = new QWidget();
     dataTab->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     QVBoxLayout *dataLayout = new QVBoxLayout(dataTab);
@@ -352,7 +351,7 @@ void MainWindow::setupUI()
     
     resultsTabWidget->addTab(dataTab, "Data Table");
     
-    // Tab 3: Video Output
+    // 选项卡3：视频输出
     videoTab = new QWidget();
     videoTab->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     QVBoxLayout *videoLayout = new QVBoxLayout(videoTab);
@@ -364,7 +363,7 @@ void MainWindow::setupUI()
     videoWidget->setMinimumHeight(300);
     videoLayout->addWidget(videoWidget, 1);
     
-    // Video controls
+    // 视频控制
     QHBoxLayout *controlsLayout = new QHBoxLayout();
     controlsLayout->setSpacing(8);
     playPauseButton = new QPushButton("Play", this);
@@ -384,7 +383,7 @@ void MainWindow::setupUI()
     
     resultsTabWidget->addTab(videoTab, "Video Output");
     
-    // Tab 4: Logs
+    // 选项卡4：日志
     QWidget *logsTab = new QWidget();
     logsTab->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     QVBoxLayout *logsLayout = new QVBoxLayout(logsTab);
@@ -415,23 +414,23 @@ void MainWindow::setupUI()
     
     mainSplitter->addWidget(mainArea);
     
-    // Set splitter sizes (left sidebar ~320px, rest for main area)
-    mainSplitter->setStretchFactor(0, 0);  // Sidebar doesn't stretch
-    mainSplitter->setStretchFactor(1, 1);  // Main area stretches
+    // 设置分割器大小（左侧边栏约320px，其余为主区域）
+    mainSplitter->setStretchFactor(0, 0);  // 侧边栏不拉伸
+    mainSplitter->setStretchFactor(1, 1);  // 主区域拉伸
     mainSplitter->setSizes(QList<int>() << 320 << 880);
     
-    // Connect clear log button
+    // 连接清除日志按钮
     connect(clearLogButton, &QPushButton::clicked, [this]() {
         outputTextEdit->clear();
     });
     
-    // Initialize media player
+    // 初始化媒体播放器
     mediaPlayer = new QMediaPlayer(this);
     audioOutput = new QAudioOutput(this);
     mediaPlayer->setAudioOutput(audioOutput);
     mediaPlayer->setVideoOutput(videoWidget);
     
-    // Create status bar
+    // 创建状态栏
     QStatusBar *statusBar = new QStatusBar(this);
     setStatusBar(statusBar);
     
@@ -443,7 +442,7 @@ void MainWindow::setupUI()
     versionLabel->setStyleSheet("padding: 4px; font-size: 9pt; color: #666;");
     statusBar->addPermanentWidget(versionLabel);
     
-    // Connect signals
+    // 连接信号
     connect(browseInputButton, &QToolButton::clicked, this, &MainWindow::onBrowseInputVideo);
     connect(browseModelButton, &QToolButton::clicked, this, &MainWindow::onBrowseModel);
     connect(startButton, &QPushButton::clicked, this, &MainWindow::onStartAnalysis);
@@ -452,11 +451,11 @@ void MainWindow::setupUI()
 }
 
 /******************************************************************************
- * EVENT HANDLER: Browse Input Video
+ * 事件处理程序：浏览输入视频
  * 
- * Opens a file dialog for the user to select an input video file.
- * Supports common video formats (MP4, AVI, MOV, MKV).
- * Updates the input path text field with the selected file path.
+ * 打开文件对话框供用户选择输入视频文件。
+ * 支持常见视频格式（MP4、AVI、MOV、MKV）。
+ * 使用所选文件路径更新输入路径文本字段。
  ******************************************************************************/
 void MainWindow::onBrowseInputVideo()
 {
@@ -473,11 +472,11 @@ void MainWindow::onBrowseInputVideo()
 }
 
 /******************************************************************************
- * EVENT HANDLER: Browse Model
+ * 事件处理程序：浏览模型
  * 
- * Opens a file dialog for the user to select a YOLO model file.
- * Supports PyTorch model formats (.pt, .pth).
- * Updates the model path text field with the selected file path.
+ * 打开文件对话框供用户选择YOLO模型文件。
+ * 支持PyTorch模型格式（.pt、.pth）。
+ * 使用所选文件路径更新模型路径文本字段。
  ******************************************************************************/
 void MainWindow::onBrowseModel()
 {
@@ -494,27 +493,27 @@ void MainWindow::onBrowseModel()
 }
 
 /******************************************************************************
- * EVENT HANDLER: Start Analysis
+ * 事件处理程序：开始分析
  * 
- * Launches the Python video analysis pipeline as a separate process.
+ * 作为单独的进程启动Python视频分析管道。
  * 
- * VALIDATION:
- * - Checks that analysis is not already running
- * - Validates input video and model paths are provided
- * - Verifies files exist before starting
+ * 验证：
+ * - 检查分析是否已在运行
+ * - 验证是否提供了输入视频和模型路径
+ * - 在开始前验证文件是否存在
  * 
- * PROCESS EXECUTION:
- * - Clears previous results from UI
- * - Constructs command-line arguments for Python script
- * - Changes working directory to foot-Function
- * - Starts QProcess to run Python main.py asynchronously
- * - Connects process signals for real-time monitoring
+ * 进程执行：
+ * - 从UI清除之前的结果
+ * - 为Python脚本构造命令行参数
+ * - 将工作目录更改为foot-Function
+ * - 启动QProcess异步运行Python main.py
+ * - 连接进程信号以进行实时监控
  * 
- * UI UPDATES:
- * - Disables start button during analysis
- * - Starts elapsed time counter
- * - Updates status label to "Running"
- * - Displays initial log message
+ * UI更新：
+ * - 分析期间禁用开始按钮
+ * - 启动已用时间计数器
+ * - 将状态标签更新为"正在运行"
+ * - 显示初始日志消息
  ******************************************************************************/
 void MainWindow::onStartAnalysis()
 {
@@ -546,7 +545,7 @@ void MainWindow::onStartAnalysis()
         return;
     }
     
-    // Clear previous results
+    // 清除之前的结果
     outputTextEdit->clear();
     resultImageLabel->clear();
     resultImageLabel->setText("Analysis in progress...");
@@ -560,7 +559,7 @@ void MainWindow::onStartAnalysis()
     stopButton->setEnabled(false);
     lastOutputPath.clear();
     
-    // Initialize process if needed
+    // 如果需要，初始化进程
     if (!pythonProcess) {
         pythonProcess = new QProcess(this);
         connect(pythonProcess, &QProcess::readyReadStandardOutput, 
@@ -571,7 +570,7 @@ void MainWindow::onStartAnalysis()
                 this, &MainWindow::onProcessFinished);
     }
     
-    // Setup Python command
+    // 设置Python命令
     QString projectRoot = getProjectRootPath();
     QString scriptPath = QDir(projectRoot).absoluteFilePath("foot-Function/main.py");
     
@@ -586,7 +585,7 @@ void MainWindow::onStartAnalysis()
     arguments << "--input" << inputVideo;
     arguments << "--model" << modelPath;
     
-    // Start the process
+    // 启动进程
     QString workingDir = QDir(projectRoot).absoluteFilePath("foot-Function");
     pythonProcess->setWorkingDirectory(workingDir);
     pythonProcess->start("python", arguments);
@@ -604,12 +603,12 @@ void MainWindow::onStartAnalysis()
     statusLabel->setText("Running analysis...");
     statusLabel->setStyleSheet("color: #0078d4; padding: 12px; border-left: 4px solid #0078d4; border-radius: 4px; background-color: #f0f8ff;");
     
-    // Show and start progress indicators
+    // 显示并启动进度指示器
     progressBar->setVisible(true);
-    progressBar->setRange(0, 0);  // Indeterminate mode
+    progressBar->setRange(0, 0);  // 不确定模式
     
     elapsedTimer->start();
-    updateTimer->start(1000);  // Update every second
+    updateTimer->start(1000);  // 每秒更新一次
     elapsedTimeLabel->setVisible(true);
     elapsedTimeLabel->setText("Elapsed: 0:00");
     
@@ -618,13 +617,13 @@ void MainWindow::onStartAnalysis()
 }
 
 /******************************************************************************
- * EVENT HANDLER: Process Ready Read Standard Output
+ * 事件处理程序：进程准备读取标准输出
  * 
- * Called automatically when Python process writes to stdout.
- * Captures output in real-time and displays in the analysis log.
- * Auto-scrolls to bottom to show latest output.
+ * 当Python进程写入stdout时自动调用。
+ * 实时捕获输出并在分析日志中显示。
+ * 自动滚动到底部以显示最新输出。
  * 
- * This provides live feedback to the user during analysis.
+ * 这在分析期间为用户提供实时反馈。
  ******************************************************************************/
 void MainWindow::onProcessReadyReadStandardOutput()
 {
@@ -641,13 +640,13 @@ void MainWindow::onProcessReadyReadStandardOutput()
 }
 
 /******************************************************************************
- * EVENT HANDLER: Process Ready Read Standard Error
+ * 事件处理程序：进程准备读取标准错误
  * 
- * Called automatically when Python process writes to stderr.
- * Captures error output in real-time and displays in red in the analysis log.
- * Auto-scrolls to bottom to show latest output.
+ * 当Python进程写入stderr时自动调用。
+ * 实时捕获错误输出并在分析日志中以红色显示。
+ * 自动滚动到底部以显示最新输出。
  * 
- * This helps users identify problems during analysis.
+ * 这帮助用户在分析期间识别问题。
  ******************************************************************************/
 void MainWindow::onProcessReadyReadStandardError()
 {
@@ -664,31 +663,31 @@ void MainWindow::onProcessReadyReadStandardError()
 }
 
 /******************************************************************************
- * EVENT HANDLER: Process Finished
+ * 事件处理程序：进程完成
  * 
- * Called when Python analysis process completes (success or failure).
+ * 当Python分析进程完成时调用（成功或失败）。
  * 
- * COMPLETION HANDLING:
- * - Stops elapsed time counter and progress indicators
- * - Re-enables start button for next analysis
- * - Updates status label based on exit code
+ * 完成处理：
+ * - 停止已用时间计数器和进度指示器
+ * - 重新启用开始按钮以进行下一次分析
+ * - 根据退出代码更新状态标签
  * 
- * RESULT LOADING (on success):
- * - Searches for output files in foot-Function/output_videos/
- * - Loads CSV data into table widget (or JSON as fallback)
- * - Loads output video into media player
- * - Switches to Data Table tab to show results
+ * 结果加载（成功时）：
+ * - 在foot-Function/output_videos/中搜索输出文件
+ * - 将CSV数据加载到表格部件（或将JSON作为备用）
+ * - 将输出视频加载到媒体播放器
+ * - 切换到数据表选项卡以显示结果
  * 
- * ERROR HANDLING (on failure):
- * - Displays error status
- * - Shows detailed error message in log
+ * 错误处理（失败时）：
+ * - 显示错误状态
+ * - 在日志中显示详细错误消息
  ******************************************************************************/
 void MainWindow::onProcessFinished(int exitCode, QProcess::ExitStatus exitStatus)
 {
     analysisRunning = false;
     startButton->setEnabled(true);
     
-    // Hide and stop progress indicators
+    // 隐藏并停止进度指示器
     progressBar->setVisible(false);
     updateTimer->stop();
     elapsedTimeLabel->setVisible(false);
@@ -707,32 +706,32 @@ void MainWindow::onProcessFinished(int exitCode, QProcess::ExitStatus exitStatus
         statusLabel->setText("✓ Analysis completed successfully");
         statusLabel->setStyleSheet("color: #28a745; padding: 12px; border-left: 4px solid #28a745; border-radius: 4px; background-color: #f0fff4;");
         
-        // Get output directory from project root
+        // 从项目根目录获取输出目录
         QString projectRoot = getProjectRootPath();
         QString outputDirPath = QDir(projectRoot).absoluteFilePath("foot-Function/output_videos");
         
-        // Load CSV data
+        // 加载CSV数据
         QString csvPath = QDir(outputDirPath).absoluteFilePath("data_output.csv");
         if (QFileInfo::exists(csvPath)) {
             loadAndDisplayCSV(csvPath);
             outputTextEdit->append(QString("Loaded CSV data from: %1").arg(csvPath));
         }
         
-        // Load JSON data (as fallback if CSV fails)
+        // 加载JSON数据（如果CSV失败则作为备用）
         QString jsonPath = QDir(outputDirPath).absoluteFilePath("data_output.json");
         if (QFileInfo::exists(jsonPath) && dataTableWidget->rowCount() == 0) {
             loadAndDisplayJSON(jsonPath);
             outputTextEdit->append(QString("Loaded JSON data from: %1").arg(jsonPath));
         }
         
-        // Load and play video
+        // 加载并播放视频
         QString videoPath = QDir(outputDirPath).absoluteFilePath("output_video.avi");
         if (QFileInfo::exists(videoPath)) {
             loadAndPlayVideo(videoPath);
             outputTextEdit->append(QString("Loaded video from: %1").arg(videoPath));
         }
         
-        // Try to find and display output for summary tab
+        // 尝试查找并显示摘要选项卡的输出
         QString outputPath = findOutputVideo();
         if (!outputPath.isEmpty()) {
             displayResultMedia(outputPath);
@@ -748,7 +747,7 @@ void MainWindow::onProcessFinished(int exitCode, QProcess::ExitStatus exitStatus
 
 QString MainWindow::findOutputVideo()
 {
-    // Look for output in the foot-Function/output_videos directory
+    // 在foot-Function/output_videos目录中查找输出
     QString projectRoot = getProjectRootPath();
     QString outputDirPath = QDir(projectRoot).absoluteFilePath("foot-Function/output_videos");
     QDir outputDir(outputDirPath);
@@ -758,14 +757,14 @@ QString MainWindow::findOutputVideo()
         return QString();
     }
     
-    // Look for video files (avi, mp4) or image files (png, jpg)
+    // 查找视频文件（avi、mp4）或图像文件（png、jpg）
     QStringList filters;
     filters << "*.avi" << "*.mp4" << "*.png" << "*.jpg" << "*.jpeg";
     
     QFileInfoList files = outputDir.entryInfoList(filters, QDir::Files, QDir::Time);
     
     if (!files.isEmpty()) {
-        // Return the most recently modified file
+        // 返回最近修改的文件
         QString path = files.first().absoluteFilePath();
         qDebug() << "Found output file:" << path;
         return path;
@@ -776,15 +775,15 @@ QString MainWindow::findOutputVideo()
 }
 
 /******************************************************************************
- * LEGACY METHOD: Display Result Media
+ * 旧方法：显示结果媒体
  * 
- * Legacy method for displaying result files (images or video paths).
+ * 用于显示结果文件（图像或视频路径）的旧方法。
  * 
- * For video files: Displays path information as text
- * For image files: Loads and displays the image with scaling
+ * 对于视频文件：以文本形式显示路径信息
+ * 对于图像文件：加载并缩放显示图像
  * 
- * NOTE: This method is largely superseded by the dedicated video player
- * and data table display methods, but maintained for compatibility.
+ * 注意：此方法主要被专用视频播放器和数据表显示方法所取代，
+ * 但为了兼容性而保留。
  ******************************************************************************/
 void MainWindow::displayResultMedia(const QString &mediaPath)
 {
@@ -797,7 +796,7 @@ void MainWindow::displayResultMedia(const QString &mediaPath)
     QFileInfo fileInfo(mediaPath);
     QString extension = fileInfo.suffix().toLower();
     
-    // For video files, just show a message with the path
+    // 对于视频文件，只显示带路径的消息
     if (extension == "avi" || extension == "mp4" || extension == "mov" || extension == "mkv") {
         resultImageLabel->setText(
             QString("Video analysis complete!\n\n"
@@ -809,7 +808,7 @@ void MainWindow::displayResultMedia(const QString &mediaPath)
         return;
     }
     
-    // For image files, display the image
+    // 对于图像文件，显示图像
     if (extension == "png" || extension == "jpg" || extension == "jpeg" || extension == "bmp") {
         QPixmap pixmap(mediaPath);
         
@@ -818,45 +817,45 @@ void MainWindow::displayResultMedia(const QString &mediaPath)
             return;
         }
         
-        // Scale image to fit while maintaining aspect ratio
+        // 缩放图像以适应同时保持宽高比
         QPixmap scaledPixmap = pixmap.scaled(
             resultScrollArea->viewport()->size(),
             Qt::KeepAspectRatio,
             Qt::SmoothTransformation
         );
         
-        resultImageLabel->setProperty("emptyState", false);  // Remove empty state property
+        resultImageLabel->setProperty("emptyState", false);  // 删除空状态属性
         resultImageLabel->setPixmap(scaledPixmap);
         resultImageLabel->setText("");
         return;
     }
     
-    // Unknown file type
-    resultImageLabel->setProperty("emptyState", false);  // Remove empty state property
+    // 未知文件类型
+    resultImageLabel->setProperty("emptyState", false);  // 删除空状态属性
     resultImageLabel->setText(
         QString("Analysis complete!\n\nOutput saved to:\n%1").arg(mediaPath)
     );
 }
 
 /******************************************************************************
- * DATA LOADING METHOD: Load and Display CSV
+ * 数据加载方法：加载并显示CSV
  * 
- * Parses CSV output file and displays data in a table widget.
+ * 解析CSV输出文件并在表格部件中显示数据。
  * 
- * CSV FORMAT EXPECTED:
- * - Header row with column names
- * - Data rows with player statistics and team possession
+ * 预期CSV格式：
+ * - 带列名的标题行
+ * - 带球员统计数据和球队控球率的数据行
  * 
- * PARSING LOGIC:
- * - Reads CSV line by line
- * - Splits on commas to extract cell values
- * - Handles quoted fields (for commas within values)
- * - Populates QTableWidget with parsed data
+ * 解析逻辑：
+ * - 逐行读取CSV
+ * - 按逗号分割以提取单元格值
+ * - 处理引号字段（用于值内的逗号）
+ * - 使用解析的数据填充QTableWidget
  * 
- * UI UPDATES:
- * - Configures table columns based on CSV header
- * - Fills rows with player/team data
- * - Enables sorting and selection
+ * UI更新：
+ * - 根据CSV标题配置表格列
+ * - 用球员/球队数据填充行
+ * - 启用排序和选择
  ******************************************************************************/
 void MainWindow::loadAndDisplayCSV(const QString &csvPath)
 {
@@ -882,13 +881,13 @@ void MainWindow::loadAndDisplayCSV(const QString &csvPath)
         return;
     }
     
-    // Parse CSV - handle basic comma separation
-    // Note: This expects simple CSV without quoted fields (as generated by Python script)
+    // 解析CSV - 处理基本的逗号分隔
+    // 注意：这期望简单的CSV，不带引号字段（由Python脚本生成）
     QStringList headers = rows[0].split(',');
     dataTableWidget->setColumnCount(headers.size());
     dataTableWidget->setHorizontalHeaderLabels(headers);
     
-    // Set rows
+    // 设置行
     dataTableWidget->setRowCount(rows.size() - 1);
     
     for (int i = 1; i < rows.size(); ++i) {
@@ -899,29 +898,29 @@ void MainWindow::loadAndDisplayCSV(const QString &csvPath)
         }
     }
     
-    // Resize columns to content
+    // 调整列大小以适应内容
     dataTableWidget->resizeColumnsToContents();
     
-    // Switch to data tab
+    // 切换到数据选项卡
     resultsTabWidget->setCurrentWidget(dataTab);
 }
 
 /******************************************************************************
- * DATA LOADING METHOD: Load and Display JSON
+ * 数据加载方法：加载并显示JSON
  * 
- * Parses JSON output file and displays data in a table widget.
- * Used as a fallback when CSV is not available.
+ * 解析JSON输出文件并在表格部件中显示数据。
+ * 当CSV不可用时用作备用方案。
  * 
- * JSON FORMAT EXPECTED:
- * - Root object containing player data and team statistics
- * - Flexible structure with nested objects/arrays
+ * 预期JSON格式：
+ * - 包含球员数据和球队统计数据的根对象
+ * - 带嵌套对象/数组的灵活结构
  * 
- * PARSING LOGIC:
- * - Uses QJsonDocument to parse JSON
- * - Extracts player statistics and team possession data
- * - Converts JSON structure to tabular format
+ * 解析逻辑：
+ * - 使用QJsonDocument解析JSON
+ * - 提取球员统计数据和球队控球数据
+ * - 将JSON结构转换为表格格式
  * 
- * This method provides an alternative data view when CSV parsing fails.
+ * 当CSV解析失败时，此方法提供替代数据视图。
  ******************************************************************************/
 void MainWindow::loadAndDisplayJSON(const QString &jsonPath)
 {
@@ -942,13 +941,13 @@ void MainWindow::loadAndDisplayJSON(const QString &jsonPath)
     
     QJsonObject root = doc.object();
     
-    // Setup table headers
+    // 设置表格标题
     dataTableWidget->setColumnCount(3);
     dataTableWidget->setHorizontalHeaderLabels(QStringList() << "Team" << "Player ID" << "Distance (m)");
     
     int row = 0;
     
-    // Process each team
+    // 处理每个球队
     for (const QString &key : root.keys()) {
         if (key == "summary") {
             continue;
@@ -969,15 +968,15 @@ void MainWindow::loadAndDisplayJSON(const QString &jsonPath)
         }
     }
     
-    // Add summary rows
+    // 添加摘要行
     if (root.contains("summary")) {
         QJsonObject summary = root["summary"].toObject();
         
-        // Add empty row for separation
+        // 添加空行以分隔
         dataTableWidget->insertRow(row);
         row++;
         
-        // Add summary header
+        // 添加摘要标题
         dataTableWidget->insertRow(row);
         QTableWidgetItem *headerItem = new QTableWidgetItem("Summary - Team Possession Percentage");
         QFont boldFont;
@@ -986,7 +985,7 @@ void MainWindow::loadAndDisplayJSON(const QString &jsonPath)
         dataTableWidget->setItem(row, 0, headerItem);
         row++;
         
-        // Add possession percentages
+        // 添加控球百分比
         if (summary.contains("team_1_possession_percent")) {
             dataTableWidget->insertRow(row);
             dataTableWidget->setItem(row, 0, new QTableWidgetItem("Team 1 Possession"));
@@ -1006,29 +1005,29 @@ void MainWindow::loadAndDisplayJSON(const QString &jsonPath)
         }
     }
     
-    // Resize columns to content
+    // 调整列大小以适应内容
     dataTableWidget->resizeColumnsToContents();
     
-    // Switch to data tab
+    // 切换到数据选项卡
     resultsTabWidget->setCurrentWidget(dataTab);
 }
 
 /******************************************************************************
- * VIDEO LOADING METHOD: Load and Play Video
+ * 视频加载方法：加载并播放视频
  * 
- * Loads the annotated output video into the Qt Multimedia player.
+ * 将标注的输出视频加载到Qt多媒体播放器中。
  * 
- * FUNCTIONALITY:
- * - Validates video file exists
- * - Sets video source in QMediaPlayer
- * - Enables playback control buttons
- * - Switches to video output tab
+ * 功能：
+ * - 验证视频文件是否存在
+ * - 在QMediaPlayer中设置视频源
+ * - 启用播放控制按钮
+ * - 切换到视频输出选项卡
  * 
- * The video typically contains:
- * - Player bounding boxes with team colors
- * - Ball tracking overlays
- * - Speed and distance metrics
- * - Possession indicators
+ * 视频通常包含：
+ * - 带球队颜色的球员边界框
+ * - 球追踪覆盖层
+ * - 速度和距离指标
+ * - 控球指示器
  ******************************************************************************/
 void MainWindow::loadAndPlayVideo(const QString &videoPath)
 {
@@ -1041,15 +1040,15 @@ void MainWindow::loadAndPlayVideo(const QString &videoPath)
     playPauseButton->setEnabled(true);
     stopButton->setEnabled(true);
     
-    // Switch to video tab
+    // 切换到视频选项卡
     resultsTabWidget->setCurrentWidget(videoTab);
 }
 
 /******************************************************************************
- * EVENT HANDLER: Play/Pause Video
+ * 事件处理程序：播放/暂停视频
  * 
- * Toggles video playback between play and pause states.
- * Updates button text to reflect current state.
+ * 在播放和暂停状态之间切换视频播放。
+ * 更新按钮文本以反映当前状态。
  ******************************************************************************/
 void MainWindow::onPlayPauseVideo()
 {
@@ -1063,10 +1062,10 @@ void MainWindow::onPlayPauseVideo()
 }
 
 /******************************************************************************
- * EVENT HANDLER: Stop Video
+ * 事件处理程序：停止视频
  * 
- * Stops video playback and resets to the beginning.
- * Updates button text to "Play" state.
+ * 停止视频播放并重置到开始位置。
+ * 将按钮文本更新为"播放"状态。
  ******************************************************************************/
 void MainWindow::onStopVideo()
 {
@@ -1075,16 +1074,16 @@ void MainWindow::onStopVideo()
 }
 
 /******************************************************************************
- * TIMER CALLBACK: Update Elapsed Time
+ * 定时器回调：更新已用时间
  * 
- * Called every second by QTimer to update the elapsed time display.
- * Formats time as "M:SS" for readability.
- * Continues until analysis completes.
+ * QTimer每秒调用一次以更新已用时间显示。
+ * 将时间格式化为"M:SS"以提高可读性。
+ * 持续到分析完成。
  ******************************************************************************/
 void MainWindow::updateElapsedTime()
 {
     if (elapsedTimer->isValid()) {
-        qint64 elapsed = elapsedTimer->elapsed();  // milliseconds
+        qint64 elapsed = elapsedTimer->elapsed();  // 毫秒
         int seconds = elapsed / 1000;
         int minutes = seconds / 60;
         seconds = seconds % 60;
@@ -1097,18 +1096,18 @@ void MainWindow::updateElapsedTime()
 }
 
 /******************************************************************************
- * UI SETUP METHOD: Load Stylesheet
+ * UI设置方法：加载样式表
  * 
- * Loads and applies a QSS (Qt Style Sheet) for modern, professional styling.
- * Reads from modern_style.qss file in the project root.
+ * 加载并应用QSS（Qt样式表）以实现现代、专业的样式。
+ * 从项目根目录中的modern_style.qss文件读取。
  * 
- * The stylesheet provides:
- * - Card-based UI design with shadows and borders
- * - Color-coded status indicators
- * - Consistent spacing and typography
- * - Professional color scheme
+ * 样式表提供：
+ * - 带阴影和边框的卡片式UI设计
+ * - 颜色编码的状态指示器
+ * - 一致的间距和排版
+ * - 专业的配色方案
  * 
- * Gracefully handles missing stylesheet file.
+ * 优雅地处理缺失的样式表文件。
  ******************************************************************************/
 void MainWindow::loadStyleSheet()
 {
@@ -1126,7 +1125,7 @@ void MainWindow::loadStyleSheet()
     QString styleSheet = QString::fromUtf8(styleFile.readAll());
     styleFile.close();
 
-    // ✔ 這裡一定要 cast 成 QApplication*
+    // ✔ 这里一定要转换成 QApplication*
     if (QApplication *app = qobject_cast<QApplication*>(QApplication::instance())) {
         app->setStyleSheet(styleSheet);
         qDebug() << "Stylesheet applied successfully";
