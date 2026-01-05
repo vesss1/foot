@@ -1,38 +1,37 @@
 #!/usr/bin/env python3
 """
 ===============================================================================
-FOOTBALL ANALYSIS - MAIN PIPELINE
+足球分析 - 主要流程管道
 ===============================================================================
 
-This is the main entry point for the football video analysis system.
-It orchestrates the entire analysis pipeline from video input to annotated
-output with player tracking, team classification, and performance metrics.
+這是足球影片分析系統的主要進入點。
+它協調從影片輸入到帶有球員追蹤、隊伍分類和效能指標的註解輸出的整個分析管道。
 
-EXECUTION FLOW:
-1. Load video and YOLO model
-2. Detect and track players, referees, and ball (YOLO + ByteTrack)
-3. Assign players to teams using K-means clustering on jersey colors
-4. Estimate camera movement using optical flow
-5. Transform perspective for accurate distance measurement
-6. Calculate player speeds and distances traveled
-7. Determine ball possession for each team
-8. Annotate video with bounding boxes, labels, and statistics
-9. Export results as video (AVI), CSV, and JSON
+執行流程：
+1. 載入影片和 YOLO 模型
+2. 偵測和追蹤球員、裁判和球（YOLO + ByteTrack）
+3. 使用 K-means 聚類根據球衣顏色將球員分配到隊伍
+4. 使用光流估計相機移動
+5. 轉換透視以進行準確的距離測量
+6. 計算球員速度和移動距離
+7. 確定每個隊伍的控球權
+8. 用邊界框、標籤和統計數據標註影片
+9. 將結果匯出為影片（AVI）、CSV 和 JSON
 
-IMPORTS:
-- utils: Video I/O, bounding box utilities, data output
-- trackers: YOLO-based object detection and tracking
-- team_assigner: K-means clustering for team identification
-- player_ball_assigner: Ball possession detection
-- camera_movement_estimator: Optical flow for camera motion
-- view_transformer: Perspective transformation
-- speed_and_distance_estimator: Metric calculations
+匯入模組：
+- utils: 影片輸入/輸出、邊界框工具、資料輸出
+- trackers: 基於 YOLO 的物件偵測和追蹤
+- team_assigner: 用於隊伍識別的 K-means 聚類
+- player_ball_assigner: 控球偵測
+- camera_movement_estimator: 相機運動的光流法
+- view_transformer: 透視轉換
+- speed_and_distance_estimator: 指標計算
 
-USAGE:
-Called by Qt GUI via QProcess:
-    python main.py --input <video_path> --model <model_path>
+使用方式：
+由 Qt GUI 透過 QProcess 呼叫：
+    python main.py --input <影片路徑> --model <模型路徑>
 
-Or directly from command line:
+或直接從命令列執行：
     python main.py --input input_videos/match.mp4 --model models/best.pt
 ===============================================================================
 """
@@ -47,7 +46,7 @@ from typing import Optional, List, Dict, Any
 import cv2
 import numpy as np
 
-# Import custom modules for video analysis pipeline
+# 匯入影片分析管道的自訂模組
 from utils import read_video, save_video, output_data
 from trackers import Tracker
 from team_assigner import TeamAssigner
@@ -56,7 +55,7 @@ from camera_movement_estimator import CameraMovementEstimator
 from view_transformer import ViewTransformer
 from speed_and_distance_estimator import SpeedAndDistance_Estimator
 
-# Configure logging for pipeline monitoring
+# 設定管道監控的日誌記錄
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -65,16 +64,16 @@ logger = logging.getLogger(__name__)
 
 
 ################################################################################
-# VIDEO ANALYSIS PIPELINE CLASS
+# 影片分析管道類別
 ################################################################################
 
 class VideoAnalysisPipeline:
     """
-    Production-safe video analysis pipeline with comprehensive error handling.
+    具有完整錯誤處理的生產級影片分析管道。
     
-    This class encapsulates the entire football video analysis workflow,
-    coordinating multiple computer vision and machine learning components
-    to produce annotated videos and statistical outputs.
+    此類別封裝了整個足球影片分析工作流程，
+    協調多個電腦視覺和機器學習元件
+    以產生標註的影片和統計輸出。
     """
     
     def __init__(self, 
@@ -83,40 +82,40 @@ class VideoAnalysisPipeline:
                  output_dir: str = 'output_videos',
                  use_stubs: bool = True):
         """
-        Initialize the video analysis pipeline.
+        初始化影片分析管道。
         
-        Args:
-            input_video_path: Path to input video file
-            model_path: Path to YOLO model file
-            output_dir: Directory for output files
-            use_stubs: Whether to use cached stub files for faster processing
+        參數：
+            input_video_path: 輸入影片檔案的路徑
+            model_path: YOLO 模型檔案的路徑
+            output_dir: 輸出檔案的目錄
+            use_stubs: 是否使用快取存根檔案以加快處理速度
         """
         self.input_video_path = input_video_path
         self.model_path = model_path
         self.output_dir = output_dir
         self.use_stubs = use_stubs
         
-        # Validate inputs early (fail-fast)
+        # 提早驗證輸入（快速失敗）
         self._validate_inputs()
         
-        # Create output directory
+        # 建立輸出目錄
         self._setup_output_directory()
         
     def _validate_inputs(self) -> None:
-        """Validate all required inputs exist and are accessible."""
-        # Check input video
+        """驗證所有必需的輸入是否存在且可訪問。"""
+        # 檢查輸入影片
         if not os.path.exists(self.input_video_path):
             raise FileNotFoundError(
                 f"Input video not found: {self.input_video_path}"
             )
         
-        # Check model file
+        # 檢查模型檔案
         if not os.path.exists(self.model_path):
             raise FileNotFoundError(
                 f"Model file not found: {self.model_path}"
             )
         
-        # Verify input video is readable
+        # 驗證輸入影片是否可讀取
         cap = cv2.VideoCapture(self.input_video_path)
         if not cap.isOpened():
             raise IOError(
@@ -127,7 +126,7 @@ class VideoAnalysisPipeline:
         logger.info("Input validation passed")
     
     def _setup_output_directory(self) -> None:
-        """Create output directory if it doesn't exist."""
+        """建立輸出目錄（如果不存在）。"""
         try:
             os.makedirs(self.output_dir, exist_ok=True)
             logger.info(f"Output directory ready: {self.output_dir}")
@@ -137,7 +136,7 @@ class VideoAnalysisPipeline:
             )
     
     def _read_video(self) -> List[np.ndarray]:
-        """Read video frames with error handling."""
+        """讀取影片幀並進行錯誤處理。"""
         try:
             logger.info(f"Reading video: {self.input_video_path}")
             frames = read_video(self.input_video_path)
@@ -151,15 +150,15 @@ class VideoAnalysisPipeline:
             raise RuntimeError(f"Failed to read video: {e}")
     
     # =========================================================================
-    # COMPONENT INITIALIZATION
+    # 元件初始化
     # =========================================================================
     
     def _initialize_tracker(self) -> Tracker:
         """
-        Initialize YOLO-based object tracker.
+        初始化基於 YOLO 的物件追蹤器。
         
-        Loads the YOLO model and sets up ByteTrack for object tracking.
-        The tracker will detect players, referees, goalkeepers, and the ball.
+        載入 YOLO 模型並設定 ByteTrack 進行物件追蹤。
+        追蹤器將偵測球員、裁判、守門員和球。
         """
         try:
             logger.info("Initializing tracker")
@@ -169,22 +168,22 @@ class VideoAnalysisPipeline:
             raise RuntimeError(f"Failed to initialize tracker: {e}")
     
     # =========================================================================
-    # DETECTION AND TRACKING
+    # 偵測和追蹤
     # =========================================================================
     
     def _get_object_tracks(self, 
                           tracker: Tracker, 
                           frames: List[np.ndarray]) -> Dict[str, Any]:
         """
-        Detect and track all objects (players, referees, ball) across frames.
+        偵測並追蹤所有物件（球員、裁判、球）跨幀。
         
-        Uses YOLO for detection and ByteTrack for multi-object tracking.
-        Supports stub caching for faster repeated runs on the same video.
+        使用 YOLO 進行偵測，使用 ByteTrack 進行多物件追蹤。
+        支援存根快取，以便在相同影片上更快地重複執行。
         
-        Returns: Dictionary with keys 'players', 'referees', 'ball'
-                 Each containing frame-by-frame tracking data
+        返回：包含鍵值 'players'、'referees'、'ball' 的字典
+             每個鍵包含逐幀的追蹤資料
         """
-        """Get object tracks with stub support."""
+        """獲取支援存根的物件追蹤。"""
         try:
             stub_path = 'stubs/track_stubs.pkl' if self.use_stubs else None
             logger.info("Getting object tracks")
@@ -204,22 +203,22 @@ class VideoAnalysisPipeline:
             raise RuntimeError(f"Failed to get object tracks: {e}")
     
     # =========================================================================
-    # CAMERA MOVEMENT COMPENSATION
+    # 相機移動補償
     # =========================================================================
     
     def _process_camera_movement(self,
                                  frames: List[np.ndarray],
                                  tracks: Dict[str, Any]) -> List[np.ndarray]:
         """
-        Estimate and compensate for camera movement using optical flow.
+        使用光流估計和補償相機移動。
         
-        Tracks feature points in the video to detect camera pan, tilt, and zoom.
-        Adjusts all object positions to account for camera movement, enabling
-        accurate speed and distance calculations.
+        追蹤影片中的特徵點以偵測相機的平移、傾斜和縮放。
+        調整所有物件位置以考慮相機移動，使得
+        能夠準確計算速度和距離。
         
-        Returns: Camera movement per frame as [dx, dy] arrays
+        返回：每幀的相機移動作為 [dx, dy] 陣列
         """
-        """Process camera movement estimation."""
+        """處理相機移動估計。"""
         try:
             logger.info("Processing camera movement")
             
@@ -240,17 +239,17 @@ class VideoAnalysisPipeline:
             raise RuntimeError(f"Failed to process camera movement: {e}")
     
     # =========================================================================
-    # PERSPECTIVE TRANSFORMATION
+    # 透視轉換
     # =========================================================================
     
     def _process_view_transformation(self, tracks: Dict[str, Any]) -> None:
         """
-        Apply perspective transformation to convert pixel coordinates to real-world coordinates.
+        應用透視轉換將像素座標轉換為真實世界座標。
         
-        Maps 2D video coordinates to a top-down field view, enabling accurate
-        distance measurements in meters. Essential for speed and distance calculations.
+        將 2D 影片座標映射到俯視場地視圖，實現準確的
+        距離測量（以公尺為單位）。對於速度和距離計算至關重要。
         """
-        """Apply view transformation to tracks."""
+        """將視圖轉換應用於追蹤。"""
         try:
             logger.info("Applying view transformation")
             transformer = ViewTransformer()
@@ -260,20 +259,20 @@ class VideoAnalysisPipeline:
             raise RuntimeError(f"Failed to apply view transformation: {e}")
     
     # =========================================================================
-    # BALL TRACKING ENHANCEMENT
+    # 球追蹤增強
     # =========================================================================
     
     def _interpolate_ball_positions(self, 
                                     tracker: Tracker,
                                     tracks: Dict[str, Any]) -> None:
         """
-        Fill in missing ball detections using interpolation.
+        使用插值填補缺失的球偵測。
         
-        Ball detection can be intermittent due to occlusion or motion blur.
-        This method uses interpolation to estimate ball positions in frames
-        where detection failed, creating smooth ball trajectories.
+        由於遮擋或運動模糊，球的偵測可能是間歇性的。
+        此方法使用插值來估計偵測失敗的幀中的球位置，
+        創建流暢的球軌跡。
         """
-        """Interpolate ball positions."""
+        """插值球位置。"""
         try:
             logger.info("Interpolating ball positions")
             tracks["ball"] = tracker.interpolate_ball_positions(tracks["ball"])
@@ -282,20 +281,20 @@ class VideoAnalysisPipeline:
             raise RuntimeError(f"Failed to interpolate ball positions: {e}")
     
     # =========================================================================
-    # PERFORMANCE METRICS
+    # 效能指標
     # =========================================================================
     
     def _estimate_speed_and_distance(self, tracks: Dict[str, Any]) -> None:
         """
-        Calculate player speed and distance traveled.
+        計算球員速度和移動距離。
         
-        Uses transformed positions and frame rate to compute:
-        - Speed in km/h for each player per frame
-        - Total distance covered in meters for each player
+        使用轉換後的位置和幀率計算：
+        - 每幀每個球員的速度（公里/小時）
+        - 每個球員移動的總距離（公尺）
         
-        These metrics are added to the tracks dictionary and displayed in output.
+        這些指標會新增到追蹤字典中並顯示在輸出中。
         """
-        """Calculate speed and distance metrics."""
+        """計算速度和距離指標。"""
         try:
             logger.info("Calculating speed and distance")
             estimator = SpeedAndDistance_Estimator()
@@ -305,22 +304,22 @@ class VideoAnalysisPipeline:
             raise RuntimeError(f"Failed to calculate speed and distance: {e}")
     
     # =========================================================================
-    # TEAM ASSIGNMENT
+    # 隊伍分配
     # =========================================================================
     
     def _assign_teams(self, 
                      frames: List[np.ndarray],
                      tracks: Dict[str, Any]) -> TeamAssigner:
         """
-        Classify players into teams based on jersey colors.
+        根據球衣顏色將球員分類到隊伍。
         
-        Uses K-means clustering on player jersey colors to identify two teams.
-        Analyzes the top half of player bounding boxes (where jerseys are visible)
-        to extract dominant colors and assign team membership.
+        對球員球衣顏色使用 K-means 聚類來識別兩個隊伍。
+        分析球員邊界框的上半部分（球衣可見的地方）
+        以提取主要顏色並分配隊伍成員資格。
         
-        Returns: TeamAssigner instance with team color assignments
+        返回：具有隊伍顏色分配的 TeamAssigner 實例
         """
-        """Assign players to teams."""
+        """將球員分配到隊伍。"""
         try:
             logger.info("Assigning player teams")
             
@@ -347,7 +346,7 @@ class VideoAnalysisPipeline:
             raise RuntimeError(f"Failed to assign teams: {e}")
     
     def _assign_ball_possession(self, tracks: Dict[str, Any]) -> np.ndarray:
-        """Determine ball possession for each frame."""
+        """確定每幀的控球權。"""
         try:
             logger.info("Assigning ball possession")
             
@@ -356,7 +355,7 @@ class VideoAnalysisPipeline:
             
             for frame_num, player_track in enumerate(tracks['players']):
                 if 1 not in tracks['ball'][frame_num]:
-                    # No ball detected, use previous possession
+                    # 未偵測到球，使用先前的控球權
                     if team_ball_control:
                         team_ball_control.append(team_ball_control[-1])
                     else:
@@ -375,7 +374,7 @@ class VideoAnalysisPipeline:
                         tracks['players'][frame_num][assigned_player]['team']
                     )
                 else:
-                    # No assignment, use previous
+                    # 無分配，使用先前的控球權
                     if team_ball_control:
                         team_ball_control.append(team_ball_control[-1])
                     else:
@@ -392,25 +391,25 @@ class VideoAnalysisPipeline:
                          tracks: Dict[str, Any],
                          team_ball_control: np.ndarray,
                          camera_movement: List[np.ndarray]) -> List[np.ndarray]:
-        """Draw all annotations on video frames."""
+        """在影片幀上繪製所有註解。"""
         try:
             logger.info("Drawing annotations")
             
-            # Draw object tracks
+            # 繪製物件追蹤
             output_frames = tracker.draw_annotations(
                 frames, 
                 tracks, 
                 team_ball_control
             )
             
-            # Draw camera movement
+            # 繪製相機移動
             estimator = CameraMovementEstimator(frames[0])
             output_frames = estimator.draw_camera_movement(
                 output_frames,
                 camera_movement
             )
             
-            # Draw speed and distance
+            # 繪製速度和距離
             speed_estimator = SpeedAndDistance_Estimator()
             speed_estimator.draw_speed_and_distance(output_frames, tracks)
             
@@ -420,7 +419,7 @@ class VideoAnalysisPipeline:
             raise RuntimeError(f"Failed to draw annotations: {e}")
     
     def _save_output_video(self, frames: List[np.ndarray]) -> str:
-        """Save output video with robust error handling."""
+        """儲存輸出影片並進行健全的錯誤處理。"""
         try:
             output_path = os.path.join(self.output_dir, 'output_video.avi')
             logger.info(f"Saving output video to: {output_path}")
@@ -430,7 +429,7 @@ class VideoAnalysisPipeline:
             
             save_video(frames, output_path)
             
-            # Verify output file was created
+            # 驗證輸出檔案是否已建立
             if not os.path.exists(output_path):
                 raise IOError("Output video file was not created")
             
@@ -444,14 +443,14 @@ class VideoAnalysisPipeline:
             raise RuntimeError(f"Failed to save output video: {e}")
     
     def _save_output_data(self, tracks: Dict[str, Any], team_ball_control: np.ndarray) -> str:
-        """Save output data with error handling."""
+        """儲存輸出資料並進行錯誤處理。"""
         try:
             output_path = os.path.join(self.output_dir, 'data_output.json')
             logger.info(f"Saving output data to: {output_path}")
             
             output_data(tracks, output_path, team_ball_control)
             
-            # Verify output files were created
+            # 驗證輸出檔案是否已建立
             if not os.path.exists(output_path):
                 raise IOError("Output data file was not created")
             
@@ -465,43 +464,43 @@ class VideoAnalysisPipeline:
             raise RuntimeError(f"Failed to save output data: {e}")
     
     def run(self) -> None:
-        """Execute the complete video analysis pipeline."""
+        """執行完整的影片分析管道。"""
         try:
             logger.info("="*60)
             logger.info("Starting Football Analysis Pipeline")
             logger.info("="*60)
             
-            # Read video
+            # 讀取影片
             video_frames = self._read_video()
             
-            # Initialize tracker
+            # 初始化追蹤器
             tracker = self._initialize_tracker()
             
-            # Get object tracks
+            # 獲取物件追蹤
             tracks = self._get_object_tracks(tracker, video_frames)
             
-            # Add positions to tracks
+            # 將位置新增到追蹤
             tracker.add_position_to_tracks(tracks)
             
-            # Process camera movement
+            # 處理相機移動
             camera_movement = self._process_camera_movement(video_frames, tracks)
             
-            # Apply view transformation
+            # 應用視圖轉換
             self._process_view_transformation(tracks)
             
-            # Interpolate ball positions
+            # 插值球位置
             self._interpolate_ball_positions(tracker, tracks)
             
-            # Calculate speed and distance
+            # 計算速度和距離
             self._estimate_speed_and_distance(tracks)
             
-            # Assign teams
+            # 分配隊伍
             self._assign_teams(video_frames, tracks)
             
-            # Assign ball possession
+            # 分配控球權
             team_ball_control = self._assign_ball_possession(tracks)
             
-            # Draw annotations
+            # 繪製註解
             output_frames = self._draw_annotations(
                 tracker,
                 video_frames,
@@ -510,7 +509,7 @@ class VideoAnalysisPipeline:
                 camera_movement
             )
             
-            # Save outputs
+            # 儲存輸出
             video_path = self._save_output_video(output_frames)
             data_path = self._save_output_data(tracks, team_ball_control)
             
@@ -528,9 +527,9 @@ class VideoAnalysisPipeline:
 
 
 def main():
-    """Main entry point with command-line argument support."""
+    """具有命令列參數支援的主要進入點。"""
     try:
-        # Parse command-line arguments
+        # 解析命令列參數
         parser = argparse.ArgumentParser(
             description='Football Analysis - Video Analysis Pipeline'
         )
@@ -560,12 +559,12 @@ def main():
         
         args = parser.parse_args()
         
-        # Get the directory where this script is located
+        # 取得此腳本所在的目錄
         script_dir = os.path.dirname(os.path.abspath(__file__))
         
-        # Resolve paths relative to script directory if they're not absolute
+        # 如果路徑不是絕對路徑，則相對於腳本目錄解析路徑
         def resolve_path(path: str) -> str:
-            """Resolve path relative to script directory if not absolute."""
+            """如果不是絕對路徑，則相對於腳本目錄解析路徑。"""
             if os.path.isabs(path):
                 return path
             return os.path.join(script_dir, path)
@@ -579,7 +578,7 @@ def main():
         logger.info(f"Model file: {model_file}")
         logger.info(f"Output directory: {output_directory}")
         
-        # Create and run pipeline
+        # 建立並執行管道
         pipeline = VideoAnalysisPipeline(
             input_video_path=input_video,
             model_path=model_file,
